@@ -1,0 +1,11 @@
+build/
+work/
+__pycache__/
+*.pyc
+
+# Original video and music (Touhou Project (c) ZUN, Bad Apple!! (c) Alstroemeria Records, PV by Anira) and
+# everything made from them: local only, never commit.
+orig/
+*.DAT
+*.mid
+*.vgm
