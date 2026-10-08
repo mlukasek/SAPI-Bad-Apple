@@ -59,12 +59,16 @@ def runs(d):
     return out
 
 
-def deadzone(d, dz):
-    """Drop runs of at most dz pixels from the change d."""
+def deadzone(d, dz, new=None):
+    """Drop runs of at most dz pixels from the change d when they lie next to an edge of the new row (the
+    edge only jitters); other runs (a dot that came or went) stay."""
     if dz <= 0 or not d:
         return d
+    edges = None if new is None else new ^ (new << 1)          # bit x: pixel x differs from pixel x-1
     for a, b in runs(d):
         if b - a < dz:
+            if edges is not None and not ((edges >> a) & 1 or (edges >> (b + 1)) & 1):
+                continue
             d &= ~(((1 << (b - a + 1)) - 1) << a)
     return d
 
@@ -95,11 +99,35 @@ def render(rows):
 def op_cost(code):
     t, r, w = mkvdec.costs()[code[0]]
     if vfmt.OPS[code[0]][0] == 'MX':
-        m = code[1]
-        t += (m - 1) * MX_MID_T - 5
-        r += m - 1
-        w += m - 1
+        m = vfmt.mx_m(code[1])
+        t += m * mkvdec.MX_FILL[0] + mkvdec.MX_TAIL[0]
+        r += m * mkvdec.MX_FILL[1] + mkvdec.MX_TAIL[1]
+        w += m * mkvdec.MX_FILL[2] + mkvdec.MX_TAIL[2]
     return t + r * CGA_R + w * CGA_W
+
+
+def nib(row, j):
+    """Pixels of byte j of a row (4 bits, bit 0 = pixel 4j)."""
+    return (row >> (4 * j)) & 15
+
+
+def split_middles(ivs, old):
+    """Intervals with 3 or more middle bytes are filled (MX): split those whose middle bytes are not all of one
+    colour in the old row into pieces of at most 4 bytes (M codes, XOR)."""
+    out = []
+    for s, e1 in ivs:
+        bs, be = s >> 2, e1 >> 2
+        if be - bs - 1 >= 3:
+            mids = {nib(old, j) for j in range(bs + 1, be)}
+            if len(mids) > 1 or mids - {0, 15}:
+                x = s
+                while x <= e1:
+                    end = min(e1, ((x >> 2) + 4) * 4 - 1)
+                    out.append((x, end))
+                    x = end + 1
+                continue
+        out.append((s, e1))
+    return out
 
 
 def build_tracks(ivrows):
@@ -141,8 +169,8 @@ def clr_cost(rows):
     return T_CLR_OP + rows * T_CLR_ROW
 
 
-def encode_tracks(tracks, out, cyc=0):
-    """Append the tracks and END to out; returns cycles."""
+def encode_tracks(tracks, base, out, cyc=0):
+    """Append the tracks and END to out; base = old rows (after clears) for the colour of MX; returns cycles."""
     tstart = None
     for y0, ivs in sorted(tracks, key=lambda t: row_addr(t[0]) + (t[1][0][0] >> 2)):
         de = 0xC000 + row_addr(y0) + (ivs[0][0] >> 2) - vfmt.ROW
@@ -154,8 +182,9 @@ def encode_tracks(tracks, out, cyc=0):
         out += code
         cyc += op_cost(code)
         prev = ivs[0][0] >> 2
-        for s, e1 in ivs:
-            code = vfmt.code_for((s >> 2) - prev, s, e1)
+        for k, (s, e1) in enumerate(ivs):
+            fill = 0xFF if nib(base[y0 + k], (s >> 2) + 1) == 0 else 0
+            code = vfmt.code_for((s >> 2) - prev, s, e1, fill)
             prev = s >> 2
             out += code
             cyc += op_cost(code)
@@ -169,7 +198,7 @@ def iv_cost(ivs):
     c = 0
     for s, e1 in ivs:
         m = (e1 >> 2) - (s >> 2) - 1
-        c += 95 if m < 0 else 135 + 28 * m
+        c += 95 if m < 0 else (135 + 28 * m if m < 3 else 200 + 16 * m)
     return c
 
 
@@ -204,15 +233,17 @@ def decode_frame(buf, pos, page):
         if k == 'S':
             page[a] ^= vfmt.pix_mask(op[2], op[3])
             continue
+        page[a] ^= vfmt.pix_mask(op[2], 3)
         if k == 'M':
-            ma, mb, m = op[2], op[3], op[4]
+            m = op[4]
+            for i in range(1, m + 1):
+                page[a + i] ^= 0xFF
         else:
-            ma, mb, m = op[2], op[3], buf[pos]
+            m = vfmt.mx_m(buf[pos])
+            col = 0xFF if buf[pos] & 1 else 0
             pos += 1
-        page[a] ^= vfmt.pix_mask(ma, 3)
-        for i in range(1, m + 1):
-            page[a + i] ^= 0xFF
-        page[a + m + 1] ^= vfmt.pix_mask(0, mb)
+            page[a + 1:a + m + 1] = bytes([col]) * m
+        page[a + m + 1] ^= vfmt.pix_mask(0, op[3])
 
 
 # --- encoder ---------------------------------------------------------------------------------------------
@@ -220,18 +251,21 @@ def frame_body(page_rows, new_rows, use_clr=True):
     """Body of one frame: CLR of rows where clearing and drawing the new row is cheaper than XOR, tracks, END.
     Returns (bytes, cycles)."""
     ivrows = []
+    base = []                                  # old rows after the clears
     clr = []                                   # per row: None or colour 0 / 1
     for y in range(H):
-        iv = runs(page_rows[y] ^ new_rows[y])
-        best = (iv_cost(iv), None, iv)
+        iv = split_middles(runs(page_rows[y] ^ new_rows[y]), page_rows[y])
+        best = (iv_cost(iv), None, iv, page_rows[y])
         if use_clr and best[0] > T_CLR_ROW:
             for col in (0, 1):
-                iv2 = runs(new_rows[y] ^ (FULL if col else 0))
+                b = FULL if col else 0
+                iv2 = runs(new_rows[y] ^ b)
                 c = T_CLR_ROW + 60 + iv_cost(iv2)
                 if c < best[0]:
-                    best = (c, col, iv2)
+                    best = (c, col, iv2, b)
         clr.append(best[1])
         ivrows.append(best[2])
+        base.append(best[3])
     out = bytearray()
     cyc = 0
     y = 0
@@ -246,7 +280,7 @@ def frame_body(page_rows, new_rows, use_clr=True):
         out += bytes([vfmt.OP_CLR, a & 0xFF, a >> 8, y1 - y + 1, 0xFF if clr[y] else 0])
         cyc += clr_cost(y1 - y + 1)
         y = y1 + 1
-    cyc = encode_tracks(build_tracks(ivrows), out, cyc)
+    cyc = encode_tracks(build_tracks(ivrows), base, out, cyc)
     return out, cyc + len(out) * T_READ
 
 
@@ -268,7 +302,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
         src = min(frames.SRC_FRAMES - 1, round(target * 1001 / 2000))
         img = rows_of(data, src)
         for z in range(dz, dz_max + 1):
-            new = [shown[y] ^ deadzone(shown[y] ^ img[y], z) for y in range(H)]
+            new = [shown[y] ^ deadzone(shown[y] ^ img[y], z, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
             need = int(-(-(cyc + OVERHEAD_T) // VBI_T))
             if need <= 2:
@@ -278,7 +312,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
             target = flip + need
             src = min(frames.SRC_FRAMES - 1, round(target * 1001 / 2000))
             img = rows_of(data, src)
-            new = [shown[y] ^ deadzone(shown[y] ^ img[y], dz_max) for y in range(H)]
+            new = [shown[y] ^ deadzone(shown[y] ^ img[y], dz_max, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
             need = int(-(-(cyc + OVERHEAD_T) // VBI_T))
             target = max(target, flip + need)

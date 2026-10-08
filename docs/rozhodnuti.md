@@ -31,7 +31,7 @@ ffmpegem (plošný průměr) a s prahem 50 %. Skripty: `tools/vlab.py`, `tools/v
 |---|---|
 | Naivní bajtová RLE | 6,1 MB, nevejde se |
 | Seznamy přechodů se slučováním se stavem stránky | 68 % snímků přes rozpočet |
-| Intervaly v řádcích s predikcí z řádku nad ním (`tools/vcodec_old.py`, jen v `work/`) | 2,5 MB, ale ≈ 250–340 T na interval (tabulky, ukazatele seznamů) a jen 86 % snímků včas |
+| Intervaly v řádcích s predikcí z řádku nad ním (pracovní `work/vcodec_old.py`, mimo repo) | 2,5 MB, ale ≈ 250–340 T na interval (tabulky, ukazatele seznamů) a jen 86 % snímků včas |
 
 **Stopy** ([format.md](format.md)):
 - Svislé řetězy intervalů s jedním bajtem na řádek.

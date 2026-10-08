@@ -7,6 +7,7 @@
 ; ends with the dispatch of the next opcode, END returns.
 
 vdec_frame:
+	ld ixh,HIGH vfill		; MX handlers jump into vfill with IXL
 	ld a,(bc)
 	inc bc
 	ld l,a
@@ -64,3 +65,4 @@ vclr_sp:
 	dw 0
 vclr_bc:
 	dw 0
+

@@ -109,24 +109,19 @@ def handler(op):
         c.op('ld a,(de)')
         c.xor_n(vfmt.pix_mask(a, 3))
         c.op('ld (de),a')
-        c.op('ld a,(bc)', vram=False)          # m (3..255), loop with B
-        c.op('inc bc')
-        c.op('push bc')
-        c.op('ld b,a')
         c.op('ld h,d')
         c.op('ld l,e')
-        lab = f'.vmx{d + 1}{a}{b}'
-        c.lines.append(lab + ':')
         c.op('inc hl')
-        c.op('ld a,(hl)')
-        c.op('cpl')
-        c.op('ld (hl),a')
-        c.op(f'djnz {lab}', 2, 13)             # counted once; the rest in MX_MID
-        c.op('pop bc')
-        c.op('inc hl')
-        c.op('ld a,(hl)')
-        c.xor_n(vfmt.pix_mask(0, b))
-        c.op('ld (hl),a')
+        c.op('ld a,(bc)', vram=False)          # 2 * (62 - m) + colour: entry into vfill
+        c.op('and 0FEh', 2, 7)
+        c.op('ld ixl,a', 2, 8)
+        c.op('ld a,(bc)', vram=False)
+        c.op('inc bc')
+        c.op('rra', 1, 4)
+        c.op('sbc a,a', 1, 4)
+        c.op(f'ld iyl,{vfmt.pix_mask(0, b):03X}h', 3, 11)   # right mask for the tail of vfill
+        c.op('jp (ix)', 2, 8)
+        return c                                # vfill: m x (ld (hl),a / inc hl), right byte, dispatch
     elif k == 'TRACKA':
         c.op('ld a,(bc)', vram=False)
         c.op('inc bc')
@@ -156,8 +151,10 @@ def handler(op):
     return c
 
 
-# cost of one middle byte in the MX loop (inc hl, ld a,(hl), cpl, ld (hl),a, djnz): T, reads, writes
-MX_MID = (6 + 7 + 4 + 7 + 13, 1, 1)     # the last djnz is 5 T shorter
+# vfill (sapi/video.asm) after an MX handler: per middle byte (ld (hl),a / inc hl) and the tail (the right
+# byte: ld a,(hl) / xor iyl / ld (hl),a, dispatch): T, reads, writes
+MX_FILL = (13, 0, 1)
+MX_TAIL = (7 + 8 + 7 + 35, 1, 1)
 
 
 def build():

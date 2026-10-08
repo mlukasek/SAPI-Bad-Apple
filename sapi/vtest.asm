@@ -15,3 +15,4 @@ vt_start:
 	include "video.asm"
 
 	include "gen/vdec.asm"
+	include "vfill.asm"

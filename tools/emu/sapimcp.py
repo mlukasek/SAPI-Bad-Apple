@@ -1,11 +1,11 @@
 """Minimal client of the SAPIemu MCP server (JSON-RPC over HTTP POST).
 
-URL: environment variable SAPIEMU_MCP, default http://127.0.0.1:8592/mcp (sapiemu-cli --mcp --mcp-port 8592;
+URL: environment variable SAPIEMU_MCP, default http://127.0.0.1:8594/mcp (sapiemu-cli --mcp --mcp-port 8594;
 the GUI listens on 8580). Command line: python sapimcp.py TOOL '{"arg": value}'
 """
 import json, os, sys, urllib.request
 
-URL = os.environ.get('SAPIEMU_MCP', 'http://127.0.0.1:8592/mcp')
+URL = os.environ.get('SAPIEMU_MCP', 'http://127.0.0.1:8594/mcp')
 _id = [0]
 
 

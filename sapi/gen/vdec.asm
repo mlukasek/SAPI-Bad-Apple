@@ -17,9 +17,9 @@ vjt:
 	db 02Bh,019h,01Eh,011h,014h,017h,01Ah,01Dh,023h,01Bh,01Fh,01Ch,021h,024h,022h,015h
 	db 025h,012h,027h,028h,020h,026h,018h,029h,02Bh,011h,02Ah,016h,019h,01Ah,013h,014h
 	db 01Bh,01Eh,01Dh,017h,021h,015h,01Fh,023h,024h,027h,01Ch,025h,026h,022h,028h,012h
-	db 02Bh,016h,018h,020h,011h,02Ch,019h,029h,02Dh,02Ah,02Eh,01Ah,02Fh,030h,031h,013h
-	db 014h,01Bh,01Eh,032h,01Dh,017h,015h,021h,01Fh,023h,024h,027h,01Ch,025h,022h,026h
-	db 012h,016h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+	db 02Bh,016h,018h,020h,011h,02Ch,019h,013h,014h,01Bh,01Eh,01Ah,01Dh,017h,021h,015h
+	db 01Fh,023h,024h,027h,01Ch,025h,026h,022h,012h,028h,016h,029h,018h,020h,011h,02Ah
+	db 019h,013h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
 	db 000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
 
 	org 01100h
@@ -207,30 +207,35 @@ vop_A9:			; ('M', 1, 3, 2, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 011C4h
-vop_C4:			; ('MX', 0, 1, 2) 191 T, 3 R, 3 W
+vop_C4:			; ('MX', 0, 1, 2) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx112:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx112
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
+
+	org 011DEh
+vop_DE:			; ('TRACKA',) 89 T, 0 R, 0 W
+	ld a,(bc)
+	inc bc
+	ld e,a
+	ld a,(bc)
+	inc bc
+	ld d,a
+	ld (vtstart),de
 	ld a,(bc)
 	inc bc
 	ld l,a
@@ -419,40 +424,46 @@ vop_A1:			; ('M', 1, 2, 3, 2) 161 T, 4 R, 4 W
 	jp (hl)
 
 	org 012BFh
-vop_BF:			; ('MX', 0, 0, 1) 188 T, 3 R, 3 W
+vop_BF:			; ('MX', 0, 0, 1) 119 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx101:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx101
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
-	org 012E0h
-vop_E0:			; ('CLR',) 10 T, 0 R, 0 W
-	jp vclr
+	org 012D8h
+vop_D8:			; ('MX', 1, 2, 2) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 033h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 01302h
 vop_02:			; ('S', -1, 0, 2) 81 T, 1 R, 1 W
@@ -618,68 +629,50 @@ vop_8F:			; ('M', 1, 1, 1, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 013AEh
-vop_AE:			; ('MX', -1, 0, 0) 188 T, 3 R, 3 W
+vop_AE:			; ('MX', -1, 0, 0) 119 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx000:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx000
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
-	org 013CFh
-vop_CF:			; ('MX', 1, 0, 1) 188 T, 3 R, 3 W
-	ld hl,00051h
+	org 013C7h
+vop_C7:			; ('MX', 0, 2, 1) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	cpl
+	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx201:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx201
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
+
+	org 013E1h
+vop_E1:			; ('END',) 10 T, 0 R, 0 W
+	ret
 
 	org 01403h
 vop_03:			; ('S', -1, 0, 3) 78 T, 1 R, 1 W
@@ -845,68 +838,46 @@ vop_94:			; ('M', 1, 1, 3, 1) 137 T, 3 R, 3 W
 	jp (hl)
 
 	org 014AFh
-vop_AF:			; ('MX', -1, 0, 1) 188 T, 3 R, 3 W
+vop_AF:			; ('MX', -1, 0, 1) 119 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx001:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx001
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
-	org 014D0h
-vop_D0:			; ('MX', 1, 0, 2) 188 T, 3 R, 3 W
-	ld hl,00051h
+	org 014C8h
+vop_C8:			; ('MX', 0, 2, 2) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	cpl
+	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx202:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx202
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 01504h
 vop_04:			; ('S', -1, 1, 1) 81 T, 1 R, 1 W
@@ -1077,68 +1048,46 @@ vop_9F:			; ('M', 1, 2, 3, 0) 113 T, 2 R, 2 W
 	jp (hl)
 
 	org 015B5h
-vop_B5:			; ('MX', -1, 1, 3) 188 T, 3 R, 3 W
+vop_B5:			; ('MX', -1, 1, 3) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx013:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx013
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 015D6h
-vop_D6:			; ('MX', 1, 2, 0) 191 T, 3 R, 3 W
+	org 015CFh
+vop_CF:			; ('MX', 1, 0, 1) 119 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 033h
+	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx220:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx220
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
 	org 01605h
 vop_05:			; ('S', -1, 1, 2) 81 T, 1 R, 1 W
@@ -1317,40 +1266,46 @@ vop_AB:			; ('M', 1, 3, 3, 0) 113 T, 2 R, 2 W
 	jp (hl)
 
 	org 016C1h
-vop_C1:			; ('MX', 0, 0, 3) 185 T, 3 R, 3 W
+vop_C1:			; ('MX', 0, 0, 3) 119 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx103:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx103
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 016E1h
-vop_E1:			; ('END',) 10 T, 0 R, 0 W
-	ret
+	org 016DAh
+vop_DA:			; ('MX', 1, 3, 0) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 011h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
 	org 01706h
 vop_06:			; ('S', -1, 1, 3) 81 T, 1 R, 1 W
@@ -1516,68 +1471,46 @@ vop_95:			; ('M', 1, 1, 3, 2) 161 T, 4 R, 4 W
 	jp (hl)
 
 	org 017B3h
-vop_B3:			; ('MX', -1, 1, 1) 191 T, 3 R, 3 W
+vop_B3:			; ('MX', -1, 1, 1) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx011:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx011
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
-	org 017D5h
-vop_D5:			; ('MX', 1, 1, 3) 188 T, 3 R, 3 W
-	ld hl,00051h
+	org 017CDh
+vop_CD:			; ('MX', 0, 3, 3) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 077h
+	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx213:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx213
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 01807h
 vop_07:			; ('S', -1, 2, 2) 81 T, 1 R, 1 W
@@ -1756,36 +1689,46 @@ vop_A6:			; ('M', 1, 3, 1, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 018C2h
-vop_C2:			; ('MX', 0, 1, 0) 191 T, 3 R, 3 W
+vop_C2:			; ('MX', 0, 1, 0) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx110:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx110
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
+
+	org 018DCh
+vop_DC:			; ('MX', 1, 3, 2) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 011h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 01908h
 vop_08:			; ('S', -1, 2, 3) 81 T, 1 R, 1 W
@@ -1968,36 +1911,29 @@ vop_AC:			; ('M', 1, 3, 3, 1) 137 T, 3 R, 3 W
 	jp (hl)
 
 	org 019C6h
-vop_C6:			; ('MX', 0, 2, 0) 191 T, 3 R, 3 W
+vop_C6:			; ('MX', 0, 2, 0) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx120:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx120
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
+
+	org 019E0h
+vop_E0:			; ('CLR',) 10 T, 0 R, 0 W
+	jp vclr
 
 	org 01A09h
 vop_09:			; ('S', -1, 3, 3) 81 T, 1 R, 1 W
@@ -2184,36 +2120,25 @@ vop_AD:			; ('M', 1, 3, 3, 2) 161 T, 4 R, 4 W
 	jp (hl)
 
 	org 01ACBh
-vop_CB:			; ('MX', 0, 3, 1) 191 T, 3 R, 3 W
+vop_CB:			; ('MX', 0, 3, 1) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx131:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx131
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
 	org 01B0Ah
 vop_0A:			; ('S', 0, 0, 0) 81 T, 1 R, 1 W
@@ -2367,68 +2292,46 @@ vop_99:			; ('M', 1, 2, 1, 0) 116 T, 2 R, 2 W
 	jp (hl)
 
 	org 01BB0h
-vop_B0:			; ('MX', -1, 0, 2) 188 T, 3 R, 3 W
+vop_B0:			; ('MX', -1, 0, 2) 119 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx002:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx002
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
-	org 01BD1h
-vop_D1:			; ('MX', 1, 0, 3) 185 T, 3 R, 3 W
-	ld hl,00051h
+	org 01BC9h
+vop_C9:			; ('MX', 0, 2, 3) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	cpl
+	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx203:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx203
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 01C0Bh
 vop_0B:			; ('S', 0, 0, 1) 81 T, 1 R, 1 W
@@ -2594,68 +2497,46 @@ vop_9B:			; ('M', 1, 2, 1, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 01CBAh
-vop_BA:			; ('MX', -1, 3, 0) 191 T, 3 R, 3 W
+vop_BA:			; ('MX', -1, 3, 0) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx030:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx030
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
-	org 01CDCh
-vop_DC:			; ('MX', 1, 3, 2) 191 T, 3 R, 3 W
+	org 01CD4h
+vop_D4:			; ('MX', 1, 1, 2) 122 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 011h
+	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx232:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx232
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 01D0Ch
 vop_0C:			; ('S', 0, 0, 2) 81 T, 1 R, 1 W
@@ -2813,68 +2694,46 @@ vop_97:			; ('M', 1, 2, 0, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 01DB2h
-vop_B2:			; ('MX', -1, 1, 0) 191 T, 3 R, 3 W
+vop_B2:			; ('MX', -1, 1, 0) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx010:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx010
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
-	org 01DD4h
-vop_D4:			; ('MX', 1, 1, 2) 191 T, 3 R, 3 W
-	ld hl,00051h
+	org 01DCCh
+vop_CC:			; ('MX', 0, 3, 2) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 077h
+	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx212:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx212
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 01E0Dh
 vop_0D:			; ('S', 0, 0, 3) 78 T, 1 R, 1 W
@@ -3028,68 +2887,46 @@ vop_92:			; ('M', 1, 1, 2, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 01EB1h
-vop_B1:			; ('MX', -1, 0, 3) 185 T, 3 R, 3 W
+vop_B1:			; ('MX', -1, 0, 3) 119 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx003:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx003
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 01ED2h
-vop_D2:			; ('MX', 1, 1, 0) 191 T, 3 R, 3 W
-	ld hl,00051h
+	org 01ECAh
+vop_CA:			; ('MX', 0, 3, 0) 122 T, 1 R, 1 W
+	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 077h
+	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx210:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx210
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
 	org 01F0Eh
 vop_0E:			; ('S', 0, 1, 1) 81 T, 1 R, 1 W
@@ -3249,68 +3086,46 @@ vop_9A:			; ('M', 1, 2, 1, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 01FB6h
-vop_B6:			; ('MX', -1, 2, 0) 191 T, 3 R, 3 W
+vop_B6:			; ('MX', -1, 2, 0) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx020:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx020
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
-	org 01FD8h
-vop_D8:			; ('MX', 1, 2, 2) 191 T, 3 R, 3 W
+	org 01FD0h
+vop_D0:			; ('MX', 1, 0, 2) 119 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 033h
+	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx222:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx222
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 0200Fh
 vop_0F:			; ('S', 0, 1, 2) 81 T, 1 R, 1 W
@@ -3482,36 +3297,46 @@ vop_A4:			; ('M', 1, 3, 0, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 020C3h
-vop_C3:			; ('MX', 0, 1, 1) 191 T, 3 R, 3 W
+vop_C3:			; ('MX', 0, 1, 1) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx111:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx111
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
+
+	org 020DDh
+vop_DD:			; ('MX', 1, 3, 3) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 011h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 0212Eh
 vop_2E:			; ('M', -1, 1, 1, 1) 140 T, 3 R, 3 W
@@ -3635,68 +3460,46 @@ vop_9C:			; ('M', 1, 2, 2, 0) 116 T, 2 R, 2 W
 	jp (hl)
 
 	org 021B4h
-vop_B4:			; ('MX', -1, 1, 2) 191 T, 3 R, 3 W
+vop_B4:			; ('MX', -1, 1, 2) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx012:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx012
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
-	org 021D7h
-vop_D7:			; ('MX', 1, 2, 1) 191 T, 3 R, 3 W
+	org 021CEh
+vop_CE:			; ('MX', 1, 0, 0) 119 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 033h
+	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx221:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx221
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
 	org 0222Fh
 vop_2F:			; ('M', -1, 1, 1, 2) 164 T, 4 R, 4 W
@@ -3832,52 +3635,46 @@ vop_9E:			; ('M', 1, 2, 2, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 022BDh
-vop_BD:			; ('MX', -1, 3, 3) 188 T, 3 R, 3 W
+vop_BD:			; ('MX', -1, 3, 3) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx033:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx033
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 022DEh
-vop_DE:			; ('TRACKA',) 89 T, 0 R, 0 W
+	org 022D7h
+vop_D7:			; ('MX', 1, 2, 1) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 033h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld e,a
-	ld a,(bc)
-	inc bc
-	ld d,a
-	ld (vtstart),de
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
 	org 02330h
 vop_30:			; ('M', -1, 1, 2, 0) 116 T, 2 R, 2 W
@@ -4001,68 +3798,46 @@ vop_98:			; ('M', 1, 2, 0, 2) 164 T, 4 R, 4 W
 	jp (hl)
 
 	org 023B7h
-vop_B7:			; ('MX', -1, 2, 1) 191 T, 3 R, 3 W
+vop_B7:			; ('MX', -1, 2, 1) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx021:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx021
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
-	org 023D9h
-vop_D9:			; ('MX', 1, 2, 3) 188 T, 3 R, 3 W
+	org 023D1h
+vop_D1:			; ('MX', 1, 0, 3) 119 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 033h
+	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx223:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx223
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 02431h
 vop_31:			; ('M', -1, 1, 2, 1) 140 T, 3 R, 3 W
@@ -4190,68 +3965,46 @@ vop_9D:			; ('M', 1, 2, 2, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 024B8h
-vop_B8:			; ('MX', -1, 2, 2) 191 T, 3 R, 3 W
+vop_B8:			; ('MX', -1, 2, 2) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx022:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx022
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
-	org 024DAh
-vop_DA:			; ('MX', 1, 3, 0) 191 T, 3 R, 3 W
+	org 024D2h
+vop_D2:			; ('MX', 1, 1, 0) 122 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 011h
+	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx230:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx230
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
 	org 02532h
 vop_32:			; ('M', -1, 1, 2, 2) 164 T, 4 R, 4 W
@@ -4379,68 +4132,46 @@ vop_A0:			; ('M', 1, 2, 3, 1) 137 T, 3 R, 3 W
 	jp (hl)
 
 	org 025BBh
-vop_BB:			; ('MX', -1, 3, 1) 191 T, 3 R, 3 W
+vop_BB:			; ('MX', -1, 3, 1) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx031:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx031
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
-	org 025DDh
-vop_DD:			; ('MX', 1, 3, 3) 188 T, 3 R, 3 W
+	org 025D5h
+vop_D5:			; ('MX', 1, 1, 3) 122 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 011h
+	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx233:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx233
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 02633h
 vop_33:			; ('M', -1, 1, 3, 0) 113 T, 2 R, 2 W
@@ -4568,55 +4299,46 @@ vop_A5:			; ('M', 1, 3, 1, 0) 116 T, 2 R, 2 W
 	jp (hl)
 
 	org 026BCh
-vop_BC:			; ('MX', -1, 3, 2) 191 T, 3 R, 3 W
+vop_BC:			; ('MX', -1, 3, 2) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx032:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx032
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
-	org 026DFh
-vop_DF:			; ('TRACKR',) 104 T, 0 R, 0 W
-	ld hl,(vtstart)
-	ld a,(bc)
-	inc bc
-	add a,l
-	ld l,a
-	adc a,h
-	sub l
-	ld h,a
-	ld (vtstart),hl
+	org 026D6h
+vop_D6:			; ('MX', 1, 2, 0) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
 	ex de,hl
+	ld a,(de)
+	xor 033h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
 
 	org 02735h
 vop_35:			; ('M', -1, 1, 3, 2) 161 T, 4 R, 4 W
@@ -4740,68 +4462,46 @@ vop_A2:			; ('M', 1, 3, 0, 0) 116 T, 2 R, 2 W
 	jp (hl)
 
 	org 027B9h
-vop_B9:			; ('MX', -1, 2, 3) 188 T, 3 R, 3 W
+vop_B9:			; ('MX', -1, 2, 3) 122 T, 1 R, 1 W
 	ld hl,0004Fh
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 033h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx023:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx023
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 027DBh
-vop_DB:			; ('MX', 1, 3, 1) 191 T, 3 R, 3 W
+	org 027D3h
+vop_D3:			; ('MX', 1, 1, 1) 122 T, 1 R, 1 W
 	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 011h
+	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx231:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx231
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
 	org 02836h
 vop_36:			; ('M', -1, 2, 0, 0) 116 T, 2 R, 2 W
@@ -4929,36 +4629,46 @@ vop_A3:			; ('M', 1, 3, 0, 1) 140 T, 3 R, 3 W
 	jp (hl)
 
 	org 028BEh
-vop_BE:			; ('MX', 0, 0, 0) 188 T, 3 R, 3 W
+vop_BE:			; ('MX', 0, 0, 0) 119 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx100:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx100
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,088h
+	jp (ix)
+
+	org 028D9h
+vop_D9:			; ('MX', 1, 2, 3) 122 T, 1 R, 1 W
+	ld hl,00051h
+	add hl,de
+	ex de,hl
+	ld a,(de)
+	xor 033h
+	ld (de),a
+	ld h,d
+	ld l,e
+	inc hl
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
+	ld a,(bc)
+	inc bc
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
 	org 02938h
 vop_38:			; ('M', -1, 2, 0, 2) 164 T, 4 R, 4 W
@@ -5089,37 +4799,26 @@ vop_A7:			; ('M', 1, 3, 1, 2) 164 T, 4 R, 4 W
 	ld h,(hl)
 	jp (hl)
 
-	org 029C7h
-vop_C7:			; ('MX', 0, 2, 1) 191 T, 3 R, 3 W
-	ld hl,00050h
+	org 029DBh
+vop_DB:			; ('MX', 1, 3, 1) 122 T, 1 R, 1 W
+	ld hl,00051h
 	add hl,de
 	ex de,hl
 	ld a,(de)
-	xor 033h
+	xor 011h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx121:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx121
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0CCh
+	jp (ix)
 
 	org 02A3Bh
 vop_3B:			; ('M', -1, 2, 1, 2) 164 T, 4 R, 4 W
@@ -5250,31 +4949,18 @@ vop_AA:			; ('M', 1, 3, 2, 2) 164 T, 4 R, 4 W
 	ld h,(hl)
 	jp (hl)
 
-	org 02AC9h
-vop_C9:			; ('MX', 0, 2, 3) 188 T, 3 R, 3 W
-	ld hl,00050h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 033h
-	ld (de),a
+	org 02ADFh
+vop_DF:			; ('TRACKR',) 104 T, 0 R, 0 W
+	ld hl,(vtstart)
 	ld a,(bc)
 	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx123:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx123
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	add a,l
+	ld l,a
+	adc a,h
+	sub l
+	ld h,a
+	ld (vtstart),hl
+	ex de,hl
 	ld a,(bc)
 	inc bc
 	ld l,a
@@ -5396,259 +5082,45 @@ vop_A8:			; ('M', 1, 3, 2, 0) 116 T, 2 R, 2 W
 	jp (hl)
 
 	org 02BC0h
-vop_C0:			; ('MX', 0, 0, 2) 188 T, 3 R, 3 W
+vop_C0:			; ('MX', 0, 0, 2) 119 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	cpl
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx102:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx102
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0EEh
+	jp (ix)
 
 	org 02CC5h
-vop_C5:			; ('MX', 0, 1, 3) 188 T, 3 R, 3 W
+vop_C5:			; ('MX', 0, 1, 3) 122 T, 1 R, 1 W
 	ld hl,00050h
 	add hl,de
 	ex de,hl
 	ld a,(de)
 	xor 077h
 	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
 	ld h,d
 	ld l,e
-.vmx113:
 	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx113
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
+	ld a,(bc)
+	and 0FEh
+	ld ixl,a
 	ld a,(bc)
 	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
+	rra
+	sbc a,a
+	ld iyl,0FFh
+	jp (ix)
 
-	org 02DC8h
-vop_C8:			; ('MX', 0, 2, 2) 191 T, 3 R, 3 W
-	ld hl,00050h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 033h
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx122:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx122
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-	org 02ECAh
-vop_CA:			; ('MX', 0, 3, 0) 191 T, 3 R, 3 W
-	ld hl,00050h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 011h
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx130:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx130
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-	org 02FCCh
-vop_CC:			; ('MX', 0, 3, 2) 191 T, 3 R, 3 W
-	ld hl,00050h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 011h
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx132:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx132
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0EEh
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-	org 030CDh
-vop_CD:			; ('MX', 0, 3, 3) 188 T, 3 R, 3 W
-	ld hl,00050h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 011h
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx133:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx133
-	pop bc
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-	org 031CEh
-vop_CE:			; ('MX', 1, 0, 0) 188 T, 3 R, 3 W
-	ld hl,00051h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	cpl
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx200:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx200
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 088h
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-	org 032D3h
-vop_D3:			; ('MX', 1, 1, 1) 191 T, 3 R, 3 W
-	ld hl,00051h
-	add hl,de
-	ex de,hl
-	ld a,(de)
-	xor 077h
-	ld (de),a
-	ld a,(bc)
-	inc bc
-	push bc
-	ld b,a
-	ld h,d
-	ld l,e
-.vmx211:
-	inc hl
-	ld a,(hl)
-	cpl
-	ld (hl),a
-	djnz .vmx211
-	pop bc
-	inc hl
-	ld a,(hl)
-	xor 0CCh
-	ld (hl),a
-	ld a,(bc)
-	inc bc
-	ld l,a
-	ld h,HI_VJT
-	ld h,(hl)
-	jp (hl)
-
-VDEC_TOP	equ 032F5h
+VDEC_TOP	equ 02CDFh
