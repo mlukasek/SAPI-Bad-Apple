@@ -82,6 +82,18 @@ překreslí a sousední ne.
   nebo šum.
 - Projdou i částice kolem stromu (1:03–1:08) a lístky v 3:07, které ve zdroji jsou.
 
+**Rozmazané hvězdy (0:21–0:22, zdrojové snímky 639–664):** když let zrychlí, hvězdy se rozmažou do vodorovných
+čárek, jedné hvězdy na snímek už není. Autor viděl, že u nás zmizely.
+- Čárka má po zmenšení asi 10 × 2–3 body a šeď do 60.
+- **Čárka** je souvislá skvrna šedi nad 6, která splňuje:
+  - nedotýká se bílé plochy;
+  - je široká 4–20 bodů a vysoká nejvýš 4;
+  - má světlo aspoň 40.
+- Z čárky se stane čára 1 bod vysoká. V každém sloupci se šedí aspoň 15 se rozsvítí nejjasnější bod.
+- Snímek musí mít aspoň 5 čárek. V rychlé pasáži jich je 21–52 na snímek a s tečkami se plynule střídají.
+- Jinde projdou protáhlé lístky a částice (1:01–1:08, 3:03–3:07), které ve zdroji jsou.
+- Video +11 KB, pozdních snímků stále 232.
+
 ## Hudba (2026-10-09)
 
 **Vlastní aranžmá místo převzatého MIDI.** První verze hrála MIDI přepis z

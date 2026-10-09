@@ -93,10 +93,64 @@ def stars(f, prev=None):
     return out if len(out) >= STAR_MIN else []
 
 
+# When the flight speeds up (0:21-0:22) the stars smear into horizontal streaks of ~10 x 2-3 pixels with grey up to
+# 60; the dots above are not there. A streak is a patch of grey over STAR_RING, not touching white, 4 to STREAK_W
+# wide and at most STREAK_H high, with light (grey over STAR_RING) of at least STAR_ON; it becomes a line 1 pixel
+# high through the brightest pixel of each column that has at least STREAK_V.
+STREAK_W, STREAK_H = 20, 4
+STREAK_V = 15
+STREAK_CAND = re.compile(rb'[\x07-\x7f]')
+
+
+def streaks(f):
+    """Lists of pixels (x, y) of the streaks in grey frame f (bytes W*H)."""
+    seen = bytearray(W * H)
+    out = []
+    for m in STREAK_CAND.finditer(f):
+        p0 = m.start()
+        if seen[p0]:
+            continue
+        seen[p0] = 1
+        stack, patch, ok = [p0], [], True
+        while stack:
+            p = stack.pop()
+            patch.append(p)
+            y, x = divmod(p, W)
+            for q in (p - W - 1, p - W, p - W + 1, p - 1, p + 1, p + W - 1, p + W, p + W + 1):
+                if 0 <= q < W * H and abs(q % W - x) <= 1 and not seen[q] and f[q] > STAR_RING:
+                    if f[q] >= 128:
+                        ok = False                  # the soft edge of a white shape
+                        continue
+                    seen[q] = 1
+                    stack.append(q)
+            if len(patch) > STREAK_W * STREAK_H:
+                ok = False
+        if not ok:
+            continue
+        xs = [p % W for p in patch]
+        ys = [p // W for p in patch]
+        if not 4 <= max(xs) - min(xs) + 1 <= STREAK_W or max(ys) - min(ys) + 1 > STREAK_H:
+            continue
+        if sum(f[p] - STAR_RING for p in patch) < STAR_ON:
+            continue
+        top = {}
+        for p in patch:
+            x = p % W
+            if f[p] >= STREAK_V and (x not in top or f[p] > f[top[x]]):
+                top[x] = p
+        out.append([(p % W, p // W) for p in top.values()])
+    return out
+
+
 def picture(data, i, prev=None):
-    """The 1-bit picture of source frame i: threshold 50 % and the stars."""
+    """The 1-bit picture of source frame i: threshold 50 %, the stars and their streaks."""
     rows = rows_of(data, i)
-    for x, y in stars(data[i * W * H:(i + 1) * W * H], prev):
+    f = data[i * W * H:(i + 1) * W * H]
+    lit = stars(f, prev)
+    sk = streaks(f)
+    if len(sk) >= STAR_MIN:
+        lit += [px for s in sk for px in s]
+    for x, y in lit:
         rows[y] |= 1 << x
     return rows
 

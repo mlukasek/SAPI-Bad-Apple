@@ -79,7 +79,7 @@ Pro každý snímek:
   - Ve snímcích, které by se nestihly, roste mrtvá zóna postupně na 2, 3, 5 a 8 bodů.
   - Zuby, které by tím vznikly na svislých hranách (úseky nejvýš 3 řádků), kodér vrátí podle zdroje (`mend`).
 - Obraz zdroje: práh 50 % po zmenšení plošným průměrem a hvězdy (malé šedé tečky na tmavém pozadí jako jeden
-  bílý bod), viz [rozhodnuti.md](rozhodnuti.md).
+  bílý bod, rozmazané hvězdy jako čára 1 bod vysoká), viz [rozhodnuti.md](rozhodnuti.md).
 
 # Hudba
 
