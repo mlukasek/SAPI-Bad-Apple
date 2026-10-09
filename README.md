@@ -62,7 +62,9 @@ Podrobně v [docs/format.md](docs/format.md) a [docs/rozhodnuti.md](docs/rozhodn
   - **RAM-1V** (64 KB, registr MAP na 63h);
   - **CGA-1V** na C000h při MAP1 = MAP2 = H, obraz na jejím monitoru VGA;
   - **MPH-1V** na 50h (YM3812, 82C54);
-  - **ZRD-1V** (RAM disk 4 MB) s CP/M, ze kterého bootuje ECMON.
+  - **ZRD-1V** (RAM disk 4 MB) s CP/M, ze kterého bootuje ECMON;
+  - konzole pro ECMON a CP/M, jinak demo nejde spustit: **AND-1V** (textová grafika s klávesnicí na JPR-1V)
+    nebo **DSM-1V** (sériový terminál).
 - Demo potřebuje **celý RAM disk** A: (asi 3,2 MB dat).
   - Nahrává se jako celý obraz disku (`ramdisk.bin`, 4 MB).
   - V SAPIemu se jen připojí. Do skutečného ZRD-1V jde nahrát přes DSM-1V nebo jiným zařízením
@@ -113,7 +115,7 @@ z vlastní kopie videa:
   Records (Masayoshi Minoshima), zpěv nomico. Stínové video (PV) Anira.
 - **Port na SAPI-1:** Martin Lukášek, 2026, s pomocí Claude (Anthropic). Aranžmá pro YM3812 je vlastní,
   přepsané ze zvuku videa.
-- **Karty sestavy V** (JPR-1V, RAM-1V, CGA-1V, MPH-1V, ZRD-1V): Libor Lasota.
+- **Karty sestavy V** (JPR-1V, RAM-1V, AND-1V, DSM-1V, CGA-1V, MPH-1V, ZRD-1V): Libor Lasota.
 - [pasmo](https://pasmo.speccy.org/) (Julián Albo) překládá program, [ffmpeg](https://ffmpeg.org/) čte
   video a zvuk.
 

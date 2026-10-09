@@ -2,8 +2,8 @@
 
 ## 1.0.0 (2026-10-09)
 
-První vydání. Bad Apple!! na SAPI-1 V (JPR-1V, RAM-1V, CGA-1V, MPH-1V, ZRD-1V) jako `BADAPPLE.COM` pro CP/M,
-data `BADAPPLE.DAT` na RAM disku.
+První vydání. Bad Apple!! na SAPI-1 V (JPR-1V, RAM-1V, CGA-1V, MPH-1V, ZRD-1V a konzole AND-1V nebo DSM-1V)
+jako `BADAPPLE.COM` pro CP/M, data `BADAPPLE.DAT` na RAM disku.
 
 - **Video:**
   - celé, 256 × 192 při 29,97 snímku/s na CGA-1V, 6393 snímků, 3,1 MB;
