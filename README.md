@@ -4,7 +4,7 @@ Demo **Bad Apple!!** pro **Tesla SAPI-1** v sestavě „V“ Libora Lasoty. Stí
 běží celé v rozlišení **256 × 192 při 29,97 snímku/s** na barevné grafice **CGA-1V**. K němu hraje
 **vlastní FM aranžmá** písně Bad Apple!! (Alstroemeria Records feat. nomico) na čipu YM3812 zvukové karty
 **MPH-1V**, synchronizované s obrazem. Demo běží pod CP/M jako `BADAPPLE.COM` a 3 MB dat čte za běhu
-z RAM disku **ZRD-1V**.
+z RAM disku **ZRD-1V** nebo **ZRMD-1**.
 
 ![Čarodějnice na koštěti v noci s hvězdami](docs/img/hvezdy.png)
 
@@ -24,8 +24,11 @@ z RAM disku **ZRD-1V**.
   v [docs/hw-otazky.md](docs/hw-otazky.md), změny v [CHANGELOG.md](CHANGELOG.md).
 - Pro srovnání nejlepší známé verze na počítačích s 8080/Z80: Vector-06c 64 × 48 při 12,5 snímku/s a PMD 85
   180 × 70 při 9,1 snímku/s.
-- Repozitář neobsahuje video, hudbu ani hotový obraz RAM disku, jen zdrojáky a nástroje. Demo se vyrobí
-  z vlastní kopie videa podle návodu níže.
+- **Hotový obraz RAM disku** s demem je ve
+  [vydání 1.0.0](https://github.com/mlukasek/SAPI-Bad-Apple/releases/tag/v1.0.0)
+  (`SAPI-Bad-Apple-1.0.0-ramdisk.zip`: `ramdisk.bin` a `ramdisk.hex`).
+- Repozitář neobsahuje video ani hudbu, jen zdrojáky a nástroje. Ze své kopie videa jde demo vyrobit podle
+  návodu níže.
 
 ## Jak to funguje
 
@@ -62,13 +65,13 @@ Podrobně v [docs/format.md](docs/format.md) a [docs/rozhodnuti.md](docs/rozhodn
   - **RAM-1V** (64 KB, registr MAP na 63h);
   - **CGA-1V** na C000h při MAP1 = MAP2 = H, obraz na jejím monitoru VGA;
   - **MPH-1V** na 50h (YM3812, 82C54);
-  - **ZRD-1V** (RAM disk 4 MB) s CP/M, ze kterého bootuje ECMON;
+  - RAM disk **ZRD-1V** nebo **ZRMD-1** (4 MB) s CP/M, ze kterého bootuje ECMON;
   - konzole pro ECMON a CP/M, jinak demo nejde spustit: **AND-1V** (textová grafika s klávesnicí na JPR-1V)
     nebo **DSM-1V** (sériový terminál).
 - Demo potřebuje **celý RAM disk** A: (asi 3,2 MB dat).
   - Nahrává se jako celý obraz disku (`ramdisk.bin`, 4 MB).
-  - V SAPIemu se jen připojí. Do skutečného ZRD-1V jde nahrát přes DSM-1V nebo jiným zařízením
-    (`ramdisk.hex` v Intel HEX).
+  - V SAPIemu se jen připojí. Na skutečném SAPI-1 je potřeba ho **nahrát do RAM disku ZRD-1V nebo
+    ZRMD-1**, přes DSM-1V nebo jiným zařízením (`ramdisk.hex` v Intel HEX).
 
 ## Jak demo vyrobit
 
@@ -90,11 +93,15 @@ z vlastní kopie videa:
 
 ## Spuštění
 
+Obraz RAM disku je buď z vydání (`ramdisk.bin`, `ramdisk.hex`), nebo z `build.cmd video`
+(`build\ramdisk.bin`, `build\ramdisk.hex`).
+
 - **SAPIemu:** `sapiemu.exe --machine tools\emu\badapple_sapi1v.sapi` (sestava V s RAM diskem
-  `build\ramdisk.bin`). Po startu v nabídce ECMON `1`, pak v CP/M `BADAPPLE`.
+  `build\ramdisk.bin`; obraz z vydání tam stačí nakopírovat). Po startu v nabídce ECMON `1`, pak v CP/M
+  `BADAPPLE`.
 - **Skutečné SAPI-1:**
-  - nahrát celý RAM disk do ZRD-1V (`build\ramdisk.bin`, nebo `build\ramdisk.hex` v Intel HEX s rozšířenou
-    adresou před každými 64 KB);
+  - nahrát celý obraz do RAM disku **ZRD-1V nebo ZRMD-1** (`ramdisk.bin`, nebo `ramdisk.hex` v Intel HEX
+    s rozšířenou adresou před každými 64 KB);
   - v nabídce ECMON zvolit `1`, pak `BADAPPLE`.
 - Libovolná klávesa demo ukončí a vrátí se do CP/M.
 
@@ -122,6 +129,7 @@ z vlastní kopie videa:
 ## Autorská práva
 
 Kód dema a nástroje jsou pod licencí GNU GPL v3 ([LICENSE](LICENSE)). Píseň, aranžmá Alstroemeria Records
-a video patří svým autorům. Repo je proto neobsahuje a `BADAPPLE.DAT` si každý vyrobí ze své kopie videa.
+a video patří svým autorům. Repo je proto neobsahuje. Obraz RAM disku ve vydání obsahuje video a hudbu
+převedené pro SAPI-1.
 Několik snímků obrazovky v `docs/img` slouží jen jako ilustrace. Demo je nekomerční projekt pro zachování
 a oživení historického československého počítače SAPI-1.

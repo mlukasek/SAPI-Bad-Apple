@@ -2,8 +2,8 @@
 
 ## 1.0.0 (2026-10-09)
 
-První vydání. Bad Apple!! na SAPI-1 V (JPR-1V, RAM-1V, CGA-1V, MPH-1V, ZRD-1V a konzole AND-1V nebo DSM-1V)
-jako `BADAPPLE.COM` pro CP/M, data `BADAPPLE.DAT` na RAM disku.
+První vydání. Bad Apple!! na SAPI-1 V (JPR-1V, RAM-1V, CGA-1V, MPH-1V, RAM disk ZRD-1V nebo ZRMD-1, konzole
+AND-1V nebo DSM-1V) jako `BADAPPLE.COM` pro CP/M, data `BADAPPLE.DAT` na RAM disku.
 
 - **Video:**
   - celé, 256 × 192 při 29,97 snímku/s na CGA-1V, 6393 snímků, 3,1 MB;
@@ -24,4 +24,6 @@ jako `BADAPPLE.COM` pro CP/M, data `BADAPPLE.DAT` na RAM disku.
   `BADAPPLE.DAT` od bloku 8 se čte přímo přes porty ZRD-1V.
 - **Ověřeno** na skutečném SAPI-1 V (autor, 2026-10-09) a v SAPIemu 0.3.0-alpha.
 
-Video ani hudbu repo neobsahuje, `BADAPPLE.DAT` se vyrábí z vlastní kopie videa (README, `docs/vyvoj.md`).
+Hotový obraz RAM disku je přiložený k vydání (`SAPI-Bad-Apple-1.0.0-ramdisk.zip`), nahrává se do RAM disku
+ZRD-1V nebo ZRMD-1. Video ani hudbu repo neobsahuje, `BADAPPLE.DAT` jde vyrobit z vlastní kopie videa
+(README, `docs/vyvoj.md`).
