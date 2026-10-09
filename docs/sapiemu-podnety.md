@@ -41,6 +41,13 @@ v 10–25 s a 35–95 s (bloky po 5 s). Po kouscích 1 s je celé demo v pořád
 běží v reálném čase (byl po `resume`) a nahrávka zachytí i to. To je asi v pořádku, ale nikde to nestojí.
 Pro zarovnání nahrávky s emulovaným časem by se hodila zmínka v popisu `audio_record`.
 
+**Totéž u `run_until` po kouscích:**
+- Skript volal po `resume` opakovaně `run_until address=exit timeout_ms=1000`.
+- Jednou konec programu proběhl v reálném čase mezi dvěma voláními a adresu žádné volání nezachytilo (stav
+  `running (real time between tool calls)`, výsledek `stopped: timeout`).
+- Ze zastaveného stroje (`pause`) to nehrozí: `run_for` i `run_until` ho po doběhnutí nechají zastavený.
+- Do popisu `run_for` a `run_until` by se hodila věta, že po `resume` stroj mezi voláními běží dál.
+
 **Co by pomohlo:**
 - Nahrávka by měla být úplná bez ohledu na délku `run_for` a `run_until`. Synchronní běh je rychlejší než
   reálný čas, takže se nabízí podezření na přetečení bufferu mezi zvukovou kartou a zapisovačem. Je to jen

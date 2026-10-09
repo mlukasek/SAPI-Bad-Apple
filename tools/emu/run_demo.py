@@ -62,6 +62,10 @@ def main():
     sm.call('resume')
     sm.call('type_text', text='BADAPPLE\r')
     sm.call('run_for', ms=300)
+    # From here on only synchronous runs from a paused machine: after resume the machine also runs in real time
+    # between the calls, so the end of the demo could pass between two run_until calls (a run missed it once)
+    # and the recording would get the gaps too.
+    sm.call('pause')
     if a.wav:
         sm.call('audio_record', start=True)
     t = 0.3
@@ -76,7 +80,6 @@ def main():
         p = os.path.join(a.out, f'shot_{at:06.1f}.png')
         screenshot(p)
         print(f'{at:6.1f} s: {counters(sym)}  {p}', flush=True)
-        sm.call('resume')
     if a.to_end:
         for _ in range(600 * 1000 // chunk):    # run_until takes at most 120 s
             r = sm.call('run_until', address=sym['exit'], timeout_ms=chunk)

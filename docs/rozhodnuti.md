@@ -4,6 +4,9 @@ Nové rozhodnutí vždy dopsat sem, s datem a důvodem.
 
 ## Sestava a hardware (2026-10-09)
 
+- **Ověřeno na skutečném SAPI-1** (autor, 2026-10-09): demo běží celé, „za mě dobrý“
+  ([hw-otazky.md](hw-otazky.md)).
+
 - **Sestava V:**
   - JPR-1V (Z80, **4 MHz TURBO**), RAM-1V, AND-1V, DSM-1V;
   - **ZRD-1V rev 1.1** (autor ho tak má);
@@ -286,6 +289,12 @@ ve stranách sterea (tam jsou kytary), po čtvrtinách šestnáctiny:
 
 **Nahrávání v SAPIemu 0.3.0:** dlouhá volání `run_for` (desítky sekund) ztrácejí zvuk (v nahrávce jsou
 úseky digitálního ticha). `run_demo.py` proto při nahrávání běží po 1 s.
+- **Mezi voláními stroj po `resume` dál běží v reálném čase.**
+  - Jednou tak konec dema proklouzl mezi dvěma voláními `run_until` a skript ho nezachytil.
+  - Nahrávka pak byla delší než emulovaný čas.
+- **Řešení:** `run_demo.py` po spuštění dema stroj zastaví (`pause`). Zastavený stroj `run_for` i `run_until`
+  po doběhnutí nechají zastavený (ověřeno podle cyklů v `machine_info`).
+- Nahrávka celého dema má teď přesně 222,0 s a časy snímků obrazovky jsou časy emulace.
 
 **Soubory k poslechu** (`tools/emu/run_demo.py --to-end --wav W`, pak `tools/emu/mkpreview.py W`):
 - `build/preview_opl.mp4`: původní video s naší hudbou;
