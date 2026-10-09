@@ -15,10 +15,11 @@ The time the interrupt takes depends on the music: build/music.bin must be made 
 
 Stream: per frame 1 B header (VBIs after the previous frame, 0 = end of the video), then the tracks, END.
 
-Usage: python tools/vcodec.py [--frames N] [--out build/video.bin] [--dz 1] [--check]
+Usage: python tools/vcodec.py [--frames N] [--out build/video.bin] [--check]
 """
 import argparse
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +56,51 @@ def rows_of(data, i):
     return [int(f[y * W:(y + 1) * W][::-1], 2) for y in range(H)]
 
 
+# Stars: the night sky of the intro (0:17-0:25) has ~70 small grey dots of 10-80 % of the light of one pixel of
+# ours; the 50 % threshold would lose them all. A star is a local maximum whose ring at distance 2 is dark (the
+# glow around the moon at 1:40 is not) and whose 3x3 sum of grey over the ring's level is at least STAR_ON (the
+# noise of the dark grey background at 1:39-1:48 is under 10); it becomes one white pixel. It twinkles: a star
+# stays lit down to STAR_OFF when a pixel at most 1 away was lit in the picture before, so it does not blink at
+# every frame. Elsewhere such dots are few (a glint, noise): a frame needs STAR_MIN of them. The particles around
+# the tree (1:03-1:08) and the petals at 3:07 pass too.
+STAR_ON, STAR_OFF = 40, 25
+STAR_RING = 6
+STAR_MIN = 5                  # fewer in a frame are rather glints in black figures or noise (1:55, 2:43)
+STAR_CAND = re.compile(rb'[\x06-\x7f]')   # grey, not white: the candidates
+
+
+def stars(f, prev=None):
+    """Pixels (x, y) of the stars in grey frame f (bytes W*H); prev = rows of the picture before or None."""
+    out = []
+    for m in STAR_CAND.finditer(f, 2 * W, (H - 2) * W):
+        p = m.start()
+        y, x = divmod(p, W)
+        if x < 2 or x >= W - 2:
+            continue
+        v = f[p]
+        nb = (f[p - W - 1], f[p - W], f[p - W + 1], f[p - 1])
+        if v <= max(nb) or v < max(f[p + 1], f[p + W - 1], f[p + W], f[p + W + 1]):
+            continue
+        ring = (f[p - 2 * W - 2:p - 2 * W + 3] + f[p + 2 * W - 2:p + 2 * W + 3] +
+                bytes((f[p - W - 2], f[p - 2], f[p + W - 2], f[p - W + 2], f[p + 2], f[p + W + 2])))
+        if max(ring) > STAR_RING:
+            continue
+        # the light of the dot over its background (the ring)
+        s = sum(f[p - W - 1:p - W + 2]) + sum(f[p - 1:p + 2]) + sum(f[p + W - 1:p + W + 2]) - sum(ring) * 9 // 16
+        if s >= STAR_ON or (s >= STAR_OFF and prev is not None and
+                            any((prev[yy] >> (x - 1)) & 7 for yy in (y - 1, y, y + 1))):
+            out.append((x, y))
+    return out if len(out) >= STAR_MIN else []
+
+
+def picture(data, i, prev=None):
+    """The 1-bit picture of source frame i: threshold 50 % and the stars."""
+    rows = rows_of(data, i)
+    for x, y in stars(data[i * W * H:(i + 1) * W * H], prev):
+        rows[y] |= 1 << x
+    return rows
+
+
 def runs(d):
     """Runs of ones in d: list of (s, e1) (e1 inclusive), ascending."""
     s = d & ~(d << 1)
@@ -69,18 +115,47 @@ def runs(d):
     return out
 
 
-def deadzone(d, dz, new=None):
-    """Drop runs of at most dz pixels from the change d when they lie next to an edge of the new row (the
-    edge only jitters); other runs (a dot that came or went) stay."""
+def deadzone(d, dz, new):
+    """Drop runs of at most dz pixels from the change d where an edge only jitters: the pixels left and right of
+    the run differ and the run is one colour in the new row (the old row has the edge at its other end). A dot
+    or a gap that comes or goes (both sides alike) stays, so does a run at the border of the picture."""
     if dz <= 0 or not d:
         return d
-    edges = None if new is None else new ^ (new << 1)          # bit x: pixel x differs from pixel x-1
     for a, b in runs(d):
-        if b - a < dz:
-            if edges is not None and not ((edges >> a) & 1 or (edges >> (b + 1)) & 1):
-                continue
-            d &= ~(((1 << (b - a + 1)) - 1) << a)
+        if b - a < dz and a > 0 and b < W - 1:
+            m = (1 << (b - a + 1)) - 1
+            n = (new >> a) & m
+            if ((new >> (a - 1)) ^ (new >> (b + 1))) & 1 and n in (0, m):
+                d &= ~(m << a)
     return d
+
+
+MEND_ROWS = 3
+
+
+def mend(new, img):
+    """Undo the dead zone where it leaves a notch. Rows are decided one by one, so a vertical edge that jitters
+    would come out ragged. A notch is a run of at most MEND_ROWS pixels of one colour in a column between pixels
+    of the other one, or a pixel whose left and right neighbours both have the other colour; its pixels and the
+    pixels around it that are not as in img get as in img (either the stale run or the stale rows around a fresh
+    one). Repeats while it changes something."""
+    inner = (FULL >> 1) & ~1
+    for _ in range(8):
+        wrong = [a ^ b for a, b in zip(new, img)]
+        fix = [((r ^ (r << 1)) & (r ^ (r >> 1)) & inner) & w for r, w in zip(new, wrong)]
+        for k in range(1, MEND_ROWS + 1):
+            for y0 in range(1, H - k):
+                run = (new[y0 - 1] ^ new[y0]) & (new[y0 + k] ^ new[y0])
+                for i in range(1, k):
+                    run &= ~(new[y0 + i] ^ new[y0])
+                if not run:
+                    continue
+                for y in range(y0 - 1, y0 + k + 1):
+                    fix[y] |= run & wrong[y]
+        if not any(fix):
+            break
+        new = [r ^ f for r, f in zip(new, fix)]
+    return new
 
 
 def row_addr(y):
@@ -331,12 +406,23 @@ def vbis_needed(cyc, start):
     return need
 
 
-def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
+# Dead zones tried in turn until the frame makes it in 2 VBIs. The wide ones only in the heavy frames (a cut, fast
+# motion): an edge lags there for a frame, but fewer frames are late and dropped.
+DEADZONES = (1, 2, 3, 5, 8)
+
+
+def shown_picture(shown, img, z):
+    """What frame img will look like: the dead zone z against the picture shown, then mended."""
+    return mend([shown[y] ^ deadzone(shown[y] ^ img[y], z, img[y]) for y in range(H)], img)
+
+
+def encode(n_frames=None, check=False, verbose=True, observe=None):
     n_src, data = frames.load(W, H)
     t_end = (frames.SRC_FRAMES * 1001 // 1000) * 2      # VBIs of the whole video
     pages = [[0] * H, [0] * H]
     vram = [bytearray(PAGE), bytearray(PAGE)]
     shown = [0] * H
+    prev_img = None
     stream = bytearray()
     stats = []
     flip = -2                     # VBI of the flip of the previous frame
@@ -347,9 +433,9 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
             break
         page = pages[n & 1]
         src = min(frames.SRC_FRAMES - 1, round(target * 1001 / 2000))
-        img = rows_of(data, src)
-        for z in range(dz, dz_max + 1):
-            new = [shown[y] ^ deadzone(shown[y] ^ img[y], z, img[y]) for y in range(H)]
+        img = picture(data, src, prev_img)
+        for z in DEADZONES:
+            new = shown_picture(shown, img, z)
             body, cyc = frame_body(page, new)
             need = vbis_needed(cyc, flip)
             if need <= 2:
@@ -358,8 +444,8 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
             # too slow (a cut): show it later and take the source frame of that time
             target = flip + need
             src = min(frames.SRC_FRAMES - 1, round(target * 1001 / 2000))
-            img = rows_of(data, src)
-            new = [shown[y] ^ deadzone(shown[y] ^ img[y], dz_max, img[y]) for y in range(H)]
+            img = picture(data, src, prev_img)
+            new = shown_picture(shown, img, z)
             body, cyc = frame_body(page, new)
             need = vbis_needed(cyc, flip)
             target = max(target, flip + need)
@@ -370,8 +456,11 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
         stream += bytes([target - flip]) + body
         pages[n & 1] = new
         shown = new
+        prev_img = img
         err = sum(bin(new[y] ^ img[y]).count('1') for y in range(H))
         stats.append((len(body) + 1, cyc, z, err, target - flip))
+        if observe:
+            observe(n, src, img, new)
         flip = target
         n += 1
         if verbose and n % 1000 == 0:
@@ -391,7 +480,7 @@ def report(stats):
     print('  bytes/frame ', q(0))
     print('  T/frame     ', q(1))
     print('  wrong px    ', q(3))
-    for z in range(1, 9):
+    for z in DEADZONES:
         c = sum(1 for s in stats if s[2] == z)
         if c:
             print(f'    dz {z}: {c} frames ({100 * c / m:.1f} %)')
@@ -404,12 +493,10 @@ def report(stats):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--frames', type=int)
-    ap.add_argument('--dz', type=int, default=1)
-    ap.add_argument('--dzmax', type=int, default=3)
     ap.add_argument('--check', action='store_true')
     ap.add_argument('--out')
     a = ap.parse_args()
-    stream, stats = encode(a.frames, a.dz, a.dzmax, a.check)
+    stream, stats = encode(a.frames, a.check)
     report(stats)
     if a.out:
         os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)

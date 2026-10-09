@@ -43,6 +43,45 @@ ffmpegem (plošný průměr) a s prahem 50 %. Skripty: `tools/vlab.py`, `tools/v
 - **Mrtvá zóna 1 bod:** odstraní 26 % intervalů a chyba hrany je nejvýš 1 bod.
 - **Inverze paletou nepomohla:** střihy v Bad Apple nejsou prosté inverze.
 
+### Čisté hrany a hvězdy
+
+Autor viděl na hranách osamělé body a skupinky bodů, roztřepené svislé hrany a chybějící hvězdy v úvodu.
+Měřeno na ukázaných obrazech kodéru proti prahovanému zdroji (pracovní `work/vid/`, mimo repo).
+
+**Osamělé body:** mrtvá zóna měla chybu.
+- Za chvějící se hranu brala každý úsek změny, který na jednom konci sousedil s hranou nového řádku. To platí
+  i pro tečku, která právě přibyla (lístek, hvězda), takže se nepošle. Tečka, která mizí, se poslala.
+- Okraj obrazu brala jako hranu. Na krajích pak zůstávaly body ze staré scény.
+- **Teď** se úsek zahodí, jen když se body vlevo a vpravo od něj liší (hrana se posunula) a úsek je v novém
+  řádku jednobarevný. Úsek na okraji obrazu se pošle vždy.
+- Malé skupinky bodů (do 4 bodů), které ve zdroji nejsou: 4,2 → 0,1 na snímek.
+
+**Roztřepené svislé hrany:** mrtvá zóna rozhoduje po řádcích, takže u chvějící se hrany se jeden řádek
+překreslí a sousední ne.
+- Svislých zubů (bod, nad i pod nímž je opačná barva) bylo 53 na snímek, zdroj jich má 8.
+- **Teď** to opraví `mend`: ve sloupci najde úsek nejvýš 3 bodů jedné barvy mezi body druhé barvy. Jeho body
+  a body kolem něj, které neodpovídají zdroji, nastaví podle zdroje. Opakuje se, dokud se něco mění.
+- Zubů je 6,6 na snímek. Hrana smí zůstat celá o bod posunutá, ale nesmí být roztřepená.
+
+**Cena:**
+- Video 2,97 → 3,09 MB.
+- Pozdních snímků bylo víc (256). Těžké snímky (střih, rychlý pohyb) teď proto zkouší mrtvou zónu
+  1, 2, 3, 5, 8 bodů (dřív 1–3). Pozdních snímků je 232, dřív 231.
+- Široká zóna platí jen na jeden snímek, další snímek hranu dorovná.
+
+**Hvězdy (0:17–0:25):**
+- Ve zdroji je kolem 70 malých šedých teček. Mají 10–80 % světla jednoho našeho bodu, takže je práh 50 % po
+  zmenšení smaže všechny.
+- **Hvězda** je místní maximum, které splňuje:
+  - prstenec ve vzdálenosti 2 je tmavý (do 6);
+  - součet 3×3 nad úrovní prstence je aspoň 40;
+  - po zmenšení ho od šumu tmavého pozadí (do 10, záře měsíce 1:39–1:48) oddělí právě odečtení prstence.
+- Z hvězdy se stane jeden bílý bod. Svítí jich 35–56 na snímek.
+- **Hystereze proti blikání:** hvězda, která svítila o snímek dřív (do 1 bodu), svítí dál až do součtu 25.
+- **Snímek musí mít aspoň 5 hvězd.** Jednotlivé tečky jinde jsou spíš odlesky v černých postavách (1:55)
+  nebo šum.
+- Projdou i částice kolem stromu (1:03–1:08) a lístky v 3:07, které ve zdroji jsou.
+
 ## Hudba (2026-10-09)
 
 **Vlastní aranžmá místo převzatého MIDI.** První verze hrála MIDI přepis z

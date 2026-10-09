@@ -74,8 +74,12 @@ Pro každý snímek:
 - Pro každý řádek volí mezi XOR proti stránce a smazáním řádku (`CLR`) s nakreslením úseků nového obrazu,
   podle toho, co je levnější.
 - Intervaly sousedních řádků spojí do stopy, když se levý bajt posune nejvýš o 1.
-- Mrtvá zóna: změna úzká 1 bod se neposílá, takže chvějící se hrana se nepřekresluje. Ve snímcích, které by
-  se nestihly, roste mrtvá zóna až na 3 body.
+- Mrtvá zóna: posun hrany o 1 bod se neposílá, takže chvějící se hrana se nepřekresluje.
+  - Tečka, která přibyla nebo zmizela, se pošle vždy.
+  - Ve snímcích, které by se nestihly, roste mrtvá zóna postupně na 2, 3, 5 a 8 bodů.
+  - Zuby, které by tím vznikly na svislých hranách (úseky nejvýš 3 řádků), kodér vrátí podle zdroje (`mend`).
+- Obraz zdroje: práh 50 % po zmenšení plošným průměrem a hvězdy (malé šedé tečky na tmavém pozadí jako jeden
+  bílý bod), viz [rozhodnuti.md](rozhodnuti.md).
 
 # Hudba
 
