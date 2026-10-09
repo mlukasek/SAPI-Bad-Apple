@@ -80,6 +80,27 @@ bubny a činely):
 druhý hlas pod melodií, plochy ve sloce a v tichém refrénu mají 3 hlasy, virbl má pod sebou nízký TOM jako tělo,
 činely na osminy hraje „ride“ (CYM s kratším doznětím).
 
+**Zvuk proti originálu** (autor: „moc to zvoní, originál má spíš šustivé bubny, kopák, činely“). Měřeno
+pracovními nástroji `work/drumlab.py`, `work/sectcmp.py` a laboratoří OPL2 v SAPIemu (`work/oplab.py`: zápisy do
+registrů YM3812 přes MCP `io_write`, nahrávka jednotlivých úderů a tónů):
+- **Chyba přehrávače bicích:** bity v registru BDh se nulovaly hned v dalším tiku, takže každý buben držel
+  klávesu jen 16 ms a pak doznával rychlostí RR (kopák RR 12 = cvaknutí bez těla). Teď bit zůstává a buben
+  dozní svou obálkou (DR); nový úder bit nejdřív vynuluje. Kopák má pak 99 % energie v 40–80 Hz jako originál.
+- **Činel CYM se nehraje:** v OPL2 je to jen kovová kombinace dvou obdélníků bez šumu (tóny kolem 1 a 2 kHz,
+  plochost spektra 0,04). Činely na osminy, otevřený hi-hat i crash hraje HH (obsahuje šum) s různým DR.
+- **Kanály 7 a 8 na 6 kHz:** při 392 / 147 Hz měl virbl tón 2,6 kHz a hi-hat 1 kHz („zvonění“). Při 6 kHz jsou
+  šum: virbl plochost 0,51, hi-hat 0,43–0,58 (originál 0,53). Tom pod virblem (ladil kanál 8 dolů) je pryč.
+- **Melodické nástroje byly skoro čisté sinusovky:** pásmo 1,6–3,2 kHz o 40–60 dB pod základním tónem, originál
+  jen o 8 dB. Mřížka parametrů v laboratoři: zpětná vazba 6–7 a silný modulátor (TL 12–18) dávají −2, −8 a −13 dB
+  v pásmech 630–1200 Hz, 1,6–3,2 kHz a 4–8 kHz jako refrén originálu. Doprovodné hlasy jsou proti sobě rozladěné
+  o 4–10 centů (hutnost).
+- **Mix:** originál má skoro všechnu energii v kopáku a base (40–80 Hz). Hlas a syntezátory jsou proto
+  o 4–6 dB níž (`MIX`), hi-haty a shaker dodávají vzduch nad 4 kHz.
+- **Výsledek (energie po pásmech proti celku, naše minus originál):** intro, riff, sloka a refrén většinou do
+  ±3 dB, nad 4 kHz o 3–7 dB méně. Před opravou intro +18 dB v 250–500 Hz a −4 dB v 40–80 Hz, refrén −20 až
+  −30 dB nad 1,6 kHz. Hutnost středů (plochost 0,15–0,25 proti 0,45) a vzduch v částech bez bicích zůstávají
+  slabší: OPL2 nemá dozvuk ani víc hlasů.
+
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule
   zpomalí ([format.md](format.md), tabulka `mus_rate`).

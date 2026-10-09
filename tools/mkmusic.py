@@ -41,15 +41,18 @@ WAIT = 0xFF
 END = 0xFE
 
 MOD_SLOT = (0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12)   # register offset of the modulator of a channel
-SLOT = {'BD': 0x13, 'SD': 0x14, 'HH': 0x11, 'OH': 0x11, 'TOM': 0x12, 'CYM': 0x15, 'RD': 0x15}    # BD: its carrier
-BIT = {'BD': 0x10, 'SD': 0x08, 'TOM': 0x04, 'CYM': 0x02, 'RD': 0x02, 'HH': 0x01, 'OH': 0x01}
-DRUM_OP = {'SD': P.SD, 'HH': P.HH, 'OH': P.OH, 'TOM': P.TOM, 'CYM': P.CYM, 'RD': P.RD}
+SLOT = {'BD': 0x13, 'SD': 0x14, 'HH': 0x11, 'OH': 0x11, 'CR': 0x11, 'TOM': 0x12, 'CYM': 0x15}  # BD: its carrier
+BIT = {'BD': 0x10, 'SD': 0x08, 'TOM': 0x04, 'HH': 0x01, 'OH': 0x01, 'CR': 0x01}
+DRUM_OP = {'SD': P.SD, 'HH': P.HH, 'OH': P.OH, 'CR': P.CR, 'TOM': P.TOM, 'CYM': P.CYM}
 # instruments sharing an operator (only the envelope differs): the operator is switched before the hit
-SHARED = {'HH': 'hat', 'OH': 'hat', 'CYM': 'cym', 'RD': 'cym'}
+SHARED = {'HH': 'hat', 'OH': 'hat', 'CR': 'hat'}
 BD_BASE = 0x20 | 0x40               # rhythm mode, deep vibrato (14 cent)
-RHYTHM_KEYS = {6: 34, 7: 67, 8: 60}     # pitch of the rhythm channels (BD A#1 like the kick of the original,
-                                        # it sweeps from above; TOM changes ch 8)
-BD_SWEEP = (46, 40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
+RHYTHM_KEYS = {6: 34}                   # BD A#1 like the kick of the original, it sweeps from above (BD_SWEEP)
+# Channels 7 and 8 drive the noise of HH and SD (and TOM, CYM): high frequencies make them hiss like the drums of
+# the original instead of ringing (measured in SAPIemu, docs/rozhodnuti.md). TOM changes ch 8 for its pitch; the
+# next hit of the other drums puts it back.
+RHYTHM_HZ = {7: 6000.0, 8: 6000.0}
+BD_SWEEP = (40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free
 
 
@@ -59,7 +62,11 @@ def tick_of(step):
 
 def ym_freq(key):
     """(block, F-number) of a (fractional) MIDI key, the finest block that fits."""
-    f = 440.0 * 2 ** ((key - 69) / 12)
+    return ym_hz(440.0 * 2 ** ((key - 69) / 12))
+
+
+def ym_hz(f):
+    """(block, F-number) of a frequency in Hz."""
     for block in range(8):
         fn = round(f * (1 << (20 - block)) / YM_RATE)
         if fn < 1024:
@@ -87,6 +94,7 @@ class Song:
         self.notes = {c: [] for c in range(6)}
         self.hits = []
         self.auto = {}
+        self.mix = {}               # channel (or 'drums') -> dB of attenuation for the whole song
 
     def note(self, ch, step, length, key, att=0.0, patch=None, legato=False, glide=0, vib=None, gate=None):
         """A note: length in steps to the next possible note, gate = steps until key off (default length);
@@ -96,7 +104,8 @@ class Song:
                                    patch=patch, legato=legato, glide=glide, vib=vib))
 
     def hit(self, step, inst, att=0.0, key=None):
-        """A drum: BD, SD, HH (closed), OH (open hat), CYM (crash), RD (ride), TOM (key = its pitch)."""
+        """A drum: BD, SD, HH (closed hat), OH (open hat), CR (crash: the hat with a long decay), TOM (key = its
+        pitch). The top cymbal (CYM) of the OPL2 is not played: it is only metal, without noise."""
         self.hits.append((step, inst, att, key))
 
     def ramp(self, kind, ch, s0, s1, v0, v1):
@@ -192,8 +201,8 @@ def compile_song(song):
         for r, v in op_static(SLOT[ins], o):
             regs.set(setup, r, v, True)
         regs.set(setup, 0x20 + SLOT[ins], reg20(o), True)
-    for ch, key in RHYTHM_KEYS.items():
-        block, fn = ym_freq(key)
+    for ch, f in list((c, 440.0 * 2 ** ((k - 69) / 12)) for c, k in RHYTHM_KEYS.items()) + list(RHYTHM_HZ.items()):
+        block, fn = ym_hz(f)
         regs.set(setup, 0xA0 + ch, fn & 0xFF, True)
         regs.set(setup, 0xB0 + ch, block << 2 | fn >> 8, True)
     regs.set(setup, 0xBD, BD_BASE, True)
@@ -242,7 +251,7 @@ def compile_song(song):
             if c in starting and keyed.get(c):            # still on: retrigger
                 regs.set(offs, 0xB0 + c, regs.v[0xB0 + c] & 0x1F, True)
             # levels: note + channel automation; brightness on the modulator
-            att = cand['att'] + song.value('level', c, step)
+            att = cand['att'] + song.value('level', c, step) + song.mix.get(c, 0.0)
             bright = song.value('bright', c, step)
             mslot = MOD_SLOT[c]
             car_tl = tl_of(p['car'], att)
@@ -267,7 +276,7 @@ def compile_song(song):
                 regs.set(fr, 0xB0 + c, (0x20 if keyed.get(c) else 0) | block << 2 | fn >> 8)
         # drums (written before the melodic attacks of the tick: the beat on time)
         dprep = []
-        dlev = song.value('level', 'drums', step)
+        dlev = song.value('level', 'drums', step) + song.mix.get('drums', 0.0)
         h = hits.get(k, {})
         bits = 0
         for ins, (att, key) in h.items():
@@ -286,16 +295,23 @@ def compile_song(song):
             regs.set(dprep, 0x40 + slot, o['ksl'] << 6 | tl_of(o, a))
             if ins == 'TOM' and key is not None:
                 block, fn = ym_freq(key)
-                regs.set(dprep, 0xA8, fn & 0xFF)
-                regs.set(dprep, 0xB8, block << 2 | fn >> 8)
+            elif 'TOM' not in h:
+                block, fn = ym_hz(RHYTHM_HZ[8])
+            else:
+                continue
+            regs.set(dprep, 0xA8, fn & 0xFF)
+            regs.set(dprep, 0xB8, block << 2 | fn >> 8)
         bkey = bd_sweep.pop(0) if bd_sweep else RHYTHM_KEYS[6]
         block, fn = ym_freq(bkey)
         regs.set(dprep, 0xA6, fn & 0xFF)
         regs.set(dprep, 0xB6, block << 2 | fn >> 8)
+        # a hit sets its bit and leaves it set: the drum dies away by its own decay (DR), as in the lab; a new
+        # hit of the same drum clears the bit first (the key must go off for a new attack)
         cur = regs.v.get(0xBD, BD_BASE)
-        if cur & bits:                                  # retrigger: the bit must go 0 first
-            regs.set(drum, 0xBD, cur & ~bits & 0xFF, True)
-        regs.set(drum, 0xBD, BD_BASE | bits)
+        if bits:
+            if cur & bits:
+                regs.set(drum, 0xBD, cur & ~bits & 0xFF, True)
+            regs.set(drum, 0xBD, cur | bits, True)
         ticks.append(offs + pre + dprep + drum + lv + fr + ons)
     tail = []
     for ch in range(9):

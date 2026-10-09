@@ -8,7 +8,7 @@ own, written for 6 FM voices and the rhythm mode of the OPL2 (tools/opl_patches.
 
 Key D# minor (the last chorus in E minor), 138 BPM, 125 bars; a step is a 16th, bar b starts at step 16 b.
 Channels: 0 lead (the voice of the song), 1 bass, 2 echo / second voice / gated chord, 3+4(+5) pads,
-5 arpeggio; drums in the rhythm mode (BD, SD, HH, TOM, CYM / ride).
+5 arpeggio; drums in the rhythm mode (BD, SD, HH as closed and open hat and crash, TOM).
 Form (bars): drum intro 0-7, riff 8-15, verse 16-31, chorus 32-47, quiet chorus 48-62, stop 63, riff 64-71,
 verse 72-87, chorus 88-103, chorus in E minor without drums 104-119, outro 120-124.
 """
@@ -133,7 +133,7 @@ class Parts:
             bass, tones = chord_at(s)
             cand = [t for t in tones_in(tones, k - 9, k - 3)]
             h = max(cand) if cand else k - 4
-            self.s.note(ch, s, ln, h, att, patch, vib=4 if ln >= 6 else None)
+            self.s.note(ch, s, ln, h + DETUNE.get(ch, 0.0), att, patch, vib=4 if ln >= 6 else None)
 
     def voices(self, tones, n, lo, hi, all_tones=None):
         """Two chord tones 3-9 semitones apart near the previous voicing (smooth movement); when the tones
@@ -167,12 +167,12 @@ class Parts:
                     pair = pair + (min(k for k in range(pair[1] + 1, pair[1] + 13) if k % 12 == root),)
                 if rhythm is None:
                     for ch, k in zip(chans, pair):
-                        self.s.note(ch, s, ln, k, att, patch, gate=ln - 0.25)
+                        self.s.note(ch, s, ln, k + DETUNE.get(ch, 0.0), att, patch, gate=ln - 0.25)
                 else:
                     for r in rhythm:
                         if s <= 16 * b + r < s + ln:
                             for ch, k in zip(chans, pair):
-                                self.s.note(ch, 16 * b + r, 1, k, att, patch, gate=gate)
+                                self.s.note(ch, 16 * b + r, 1, k + DETUNE.get(ch, 0.0), att, patch, gate=gate)
 
     def bass(self, b0, n, patch, att, style):
         """Bass from the chord roots: 'oct8' (8ths low/high), 'pump' (8ths, offbeats strong), 'quarter',
@@ -204,38 +204,43 @@ class Parts:
                     self.s.note(5, st, every, ks[i % len(ks)], att, patch)
 
     def drums(self, b0, n, pattern):
-        """pattern: {instrument: (16 chars, att)}; x = hit, X = accent (-3 dB), o = soft (+5 dB).
-        A snare gets the low tom under it (the body of the snare of the original)."""
+        """pattern: {instrument: (16 chars, att)}; x = hit, X = accent (-3 dB), o = soft (+5 dB)."""
         for b in range(b0, b0 + n):
             for inst, (pat, att) in pattern.items():
                 for i, c in enumerate(pat):
                     if c in 'xXo':
-                        a = att + {'x': 0, 'X': -3, 'o': 5}[c]
-                        self.s.hit(16 * b + i, inst, a)
-                        if inst == 'SD':
-                            self.s.hit(16 * b + i, 'TOM', a + 3, SNARE_BODY)
+                        self.s.hit(16 * b + i, inst, att + {'x': 0, 'X': -3, 'o': 5}[c])
 
 
 # drum patterns
-SNARE_BODY = 50                     # D3: pitch of the tom under the snare
 FOUR = 'x...x...x...x...'
 TWO_FOUR = '....x.......x...'
 OFF8 = '..x...x...x...x.'
 EIGHTS = 'x.x.x.x.x.x.x.x.'
 
 
+# mix (dB of attenuation per channel): the original has most of its energy in the kick and the bass, the voice
+# and the synths lie lower (measured per section, docs/rozhodnuti.md)
+MIX = {0: 4.0, 1: 0.0, 2: 4.0, 3: 6.0, 4: 6.0, 5: 5.0, 'drums': 0.0}
+# detune of the accompanying voices against each other (semitones): the beating thickens the sound like the
+# chorus of the synths of the original (the pure FM tones measured too clean)
+DETUNE = {2: 0.10, 3: -0.08, 4: 0.08, 5: 0.04}
+SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
+
+
 def arrange(song):
     p = Parts(song)
     s = song
+    s.mix.update(MIX)
 
-    # ---- intro (0-7): the drums alone, as in the original: kick on the beats, snare on 2 and 4, the ride
+    # ---- intro (0-7): the drums alone, as in the original: kick on the beats, snare on 2 and 4, the hats
     # on the 8ths, a crash at the start, a snare run at the end of every other bar; bar 7 rises to the riff
     for b in range(7):
         p.drums(b, 1, {'BD': (FOUR, 0), 'SD': (TWO_FOUR if b % 2 else '....x.......xxxx', 3),
-                       'RD': ('X.x.X.x.X.x.X.x.', 10)})
-    s.hit(0, 'CYM', 0.0)
+                       'HH': ('X.x.X.x.X.x.X.x.', 8)})
+    s.hit(0, 'CR', 0.0)
     for b in (2, 4, 6):
-        s.hit(16 * b, 'CYM', 6.0)
+        s.hit(16 * b, 'CR', 6.0)
     p.drums(7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.x.x.', 3)})
     for i in range(8):
         s.hit(16 * 7 + 8 + i, 'OH', 14.0 - 1.5 * i)        # a rising wash of hats into the riff
@@ -247,7 +252,7 @@ def arrange(song):
         p.bass(b0, 8, P.BASS, 1.0, 'long')
         p.drums(b0, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': (EIGHTS, 9), 'OH': (OFF8, 7)})
         p.drums(b0 + 7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.xxxx', 3), 'HH': (OFF8, 9)})
-        s.hit(16 * b0, 'CYM', 1.0)
+        s.hit(16 * b0, 'CR', 1.0)
 
     def verse(b0, second_voice):
         # the voice with its echo (in the second verse a second voice in the second half); held strings
@@ -255,31 +260,32 @@ def arrange(song):
         s.ramp('bright', 0, 16 * b0, 16 * b0, 2, 2)
         for st, ln, k in notes:
             if st < 16 * (b0 + 8) or not second_voice:
-                s.note(2, st + 3, ln, k, 12.0, P.SHADOW)
+                s.note(2, st + 3, ln, k + DETUNE[2], 12.0, P.SHADOW)
         if second_voice:
             p.second(2, [n for n in notes if n[0] >= 16 * (b0 + 8)], P.SHADOW, 7.0)
         p.chords(b0, 16, P.PAD, 8.0, chans=(3, 4, 5), lo=56, hi=70)
         p.bass(b0, 16, P.BASS, 2.0, 'pump')
-        p.drums(b0, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 4), 'HH': (OFF8, 8)})
+        p.drums(b0, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 4), 'HH': ('o.x.o.x.o.x.o.x.', 7)})
         p.drums(b0 + 7, 1, {'BD': (FOUR, 0), 'SD': ('....x.......xxxx', 4), 'HH': (OFF8, 8)})
-        p.drums(b0 + 8, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': ('.o.o.o.o.o.o.o.o', 12), 'OH': (OFF8, 8)})
+        p.drums(b0 + 8, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': ('.o.o.o.o.o.o.o.o', 9), 'OH': (OFF8, 6)})
         p.drums(b0 + 15, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.xxxx', 3), 'HH': (OFF8, 8)})
-        s.hit(16 * (b0 + 8), 'CYM', 4.0)
+        s.hit(16 * (b0 + 8), 'CR', 4.0)
 
     def chorus(b0, text, tr=0, drums=True):
         notes = p.line(0, 16 * b0, text, P.LEAD, att=1.5, tr=tr, vib=3)
         s.ramp('bright', 0, 16 * b0, 16 * b0, -2, -2)
         p.second(2, notes, P.SHADOW, 6.0)
-        p.chords(b0, 16, P.PAD, 6.0, lo=56, hi=70)
+        p.chords(b0, 16, P.PAD, 6.0, lo=56 if drums else 62, hi=70 if drums else 76)
         if drums:
             p.arp(b0, 16, P.PLUCK, 11.0)
             p.bass(b0, 16, P.BASS, 1.5, 'pump')
-            p.drums(b0, 15, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': ('.o.o.o.o.o.o.o.o', 11), 'OH': (OFF8, 8)})
+            p.drums(b0, 15, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': ('.o.o.o.o.o.o.o.o', 8), 'OH': (OFF8, 6)})
             for b in (b0, b0 + 8):
-                s.hit(16 * b, 'CYM', 2.0)
+                s.hit(16 * b, 'CR', 2.0)
         else:
             # the last chorus: no drums, the arpeggio in 8ths like a piano, the bass pulses, then holds
             p.arp(b0, 16, P.PLUCK, 9.0, every=2)
+            p.drums(b0, 16, {'HH': (SHAKER, 13)})
             p.bass(b0, 8, P.BASS, 3.0, 'pump')
             p.bass(b0 + 8, 8, P.SUB, 2.0, 'long')
 
@@ -291,16 +297,16 @@ def arrange(song):
             if st < stop:
                 ln = min(ln, stop - st)
                 s.note(0, st, ln, k, 3.0, P.LEAD, vib=3 if ln >= 6 else None)
-                s.note(2, st + 3, ln, k, 13.0, P.SHADOW)
+                s.note(2, st + 3, ln, k + DETUNE[2], 13.0, P.SHADOW)
         s.ramp('bright', 0, 16 * b0, 16 * b0, 3, 3)
-        p.chords(b0, 15, P.PAD, 6.0, chans=(3, 4, 5), lo=56, hi=70)
+        p.chords(b0, 15, P.PAD, 6.0, chans=(3, 4, 5), lo=62, hi=76)
         p.bass(b0, 15, P.SUB, 2.0, 'long')
-        p.drums(b0, 15, {'SD': ('........x.......', 7), 'HH': ('........x.......', 9)})
+        p.drums(b0, 15, {'SD': ('........x.......', 7), 'HH': (SHAKER, 11)})
         # bar 63: two snare hits and the big stop on beat 3, then silence until the riff
         b = b0 + 15
         s.hit(16 * b + 2, 'SD', 5.0)
         s.hit(16 * b + 4, 'SD', 3.0)
-        for inst in ('BD', 'SD', 'CYM'):
+        for inst in ('BD', 'SD', 'CR'):
             s.hit(stop, inst, 0.0)
         bass, tones = chord_at(stop)
         for ch, k in zip((3, 4, 5), tones_in(tones, 60, 72)):
@@ -325,8 +331,8 @@ def arrange(song):
     # ---- outro (120-124): Esus4 held and fading, the voice holds its last note (the fifth)
     s.note(0, 16 * 119, 32, key('b4'), 1.5, P.LEAD, vib=3)
     s.ramp('level', 0, 16 * 120, 16 * 122, 0, 30)
-    s.note(3, 16 * 120, 80, key('e4'), 6.0, P.PAD, vib=8)
-    s.note(4, 16 * 120, 80, key('a4'), 6.0, P.PAD, vib=8)
-    s.note(5, 16 * 120, 80, key('b4'), 9.0, P.PAD, vib=8)
+    s.note(3, 16 * 120, 80, key('e5') + DETUNE[3], 8.0, P.PAD, vib=8)
+    s.note(4, 16 * 120, 80, key('a5') + DETUNE[4], 8.0, P.PAD, vib=8)
+    s.note(5, 16 * 120, 80, key('e4') + DETUNE[5], 9.0, P.PAD, vib=8)
     for ch in (3, 4, 5):
         s.ramp('level', ch, 16 * 120, 16 * 125, 0, 30)
