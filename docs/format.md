@@ -126,9 +126,9 @@ pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou
 
 | Kanál | Part |
 |---|---|
-| 0 | hlas (melodie zpěvu); v riffu kytara (linka basy, rozladěná) |
+| 0 | hlas (melodie zpěvu); v riffu a po stopu v taktu 63 kytara (rozladěná) |
 | 1 | basa: osminy s důrazem mezi doby, v riffu šestnáctinová linka (`DRIVE`), v tichých místech sub basa |
-| 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií; v riffu druhá kytara |
+| 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií; v riffu a po stopu druhá kytara |
 | 3, 4 | plocha (pad), ve sloce a v tichém refrénu s kanálem 5 třemi hlasy; v riffu 3 tělo virblu, 4 plocha |
 | 0 v intru | tělo virblu (`SNARE_BODY`) |
 | 3–5 v intru | šumové ocasy bicích (dozvuk virblu, hi-hatů a crashe: `INTRO_TAILS`) |

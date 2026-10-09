@@ -58,7 +58,7 @@ standardní knihovně):
 - Melodie zpěvu ze středu sterea (M − 1,2·|S| ve spektru), zprůměrovaná přes všechna opakování téhož místa
   a dohledaná Viterbiho průchodem; sloka i refrén sedí na známou melodii.
 - Akordy z bělené chromy a basy po půltaktech: sloka D#m – D#m – Bmaj7 – C# Dm, refrén Bmaj7 – C#sus2 –
-  D#m – D#m, v riffu D#m s G#7 a F#sus2, konce refrénu bas G# → G.
+  D#m – D#m, v riffu D#m s G#7 a F#sus2, konec refrénu před e moll (takt 103) bas G# → G.
 - Kontrola výsledku (pracovní `work/compare.py`, nahrávka z SAPIemu proti originálu): podobnost chromy po
   taktech většinou 0,6–0,96 a tónina sedí. Slabší jsou takty, kde melodie drží tón přes akord, a intro
   (jen bicí, chroma tam nic neříká).
@@ -73,7 +73,7 @@ bubny a činely):
 - **Sloka:** široká držená plocha (struny) D#m, basa osminy s důrazem mezi doby, hi-haty mezi dobami.
 - **Refrén:** široká plocha, basa osminy, plný rytmus.
 - **Tichý refrén 48–62:** bez kopáku, tlesknutí na 3. dobu, hlas zpívá dál. **Takt 63:** dva údery virblu a
-  společný úder na 3. dobu, pak ticho do riffu.
+  společný úder na 3. dobu, po něm kytary do riffu (odstavec „Akordy kytar po stopu“ níže).
 - **Poslední refrén 104–119 v e moll: bez bicích.** Kopák mizí po taktu 103.
 - **Dohra 120–124:** jen doznívající Esus4, beze basy.
 
@@ -200,6 +200,19 @@ mezi 40–43 s; výškou not si v některých místech také nejsem jist“):
 
   Kde má akord doprovodu tón zpěvu (C#sus2 pod 2. a 14. taktem refrénu), měření C#5 zkresluje a rozhodl text
   s přepisy. Sjezd D#4–C#4 ve 4. taktu sloky měření potvrdilo, zůstává.
+
+**Akordy kytar po stopu** (autor: „v 1:50–1:53 jsou v originále tři kytarové akordy, ty máš jen jeden;
+podobné jsem si všiml i jinde“). Pracovní `work/vox/stabs.py`, `sidemap.py` a `hitmap.py` měří nástupy a chromu
+ve stranách sterea (tam jsou kytary), po čtvrtinách šestnáctiny:
+- **Takt 63:** před stopem (kroky 3–7) jsou strany úplně tiché. Od společného úderu na 3. dobu až do riffu hrají
+  kytary kvintové akordy po osminách A#5 – G#5 – A#5 – F#5 nad basou G# → F#. Basy a kytary drží plně.
+  - U nás byl jediný krátký akord (G#7) a ticho.
+  - Teď hrají dvě rozladěné kytary jako v riffu (`STOP_GTR`, nástroj `GRIT`, kvinta na druhém kanálu)
+    a basa `DRIVE` se sinusem `DEEP` (`STOP_BASS`).
+- **Konce refrénů** (basa a chroma po osminách proti našemu plánu akordů):
+  - takt 47 (přechod na tomy před tichým refrénem): kytary celý takt drží D#5, takže D#m. Naše G#7 → D#/G tam
+    nepatřilo (`CHART_FIX`).
+  - takt 103 (před refrénem v e moll): G#7, pak G–B–D–E, tedy Em7/G místo D#/G.
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule

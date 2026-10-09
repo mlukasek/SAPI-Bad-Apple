@@ -7,7 +7,7 @@ measured from the audio of the video (tools/transcribe.py, docs/rozhodnuti.md); 
 own, written for 6 FM voices and the rhythm mode of the OPL2 (tools/opl_patches.py).
 
 Key D# minor (the last chorus in E minor), 138 BPM, 125 bars; a step is a 16th, bar b starts at step 16 b.
-Channels: 0 lead (the voice of the song), 1 bass, 2 echo / second voice / gated chord, 3+4(+5) pads,
+Channels: 0 lead (the voice of the song), 1 bass, 2 echo / second voice, 3+4(+5) pads,
 5 arpeggio; drums in the rhythm mode (BD, SD, HH as closed and open hat and crash, TOM).
 Form (bars): drum intro 0-7, riff 8-15, verse 16-31, chorus 32-47, quiet chorus 48-62, stop 63, riff 64-71,
 verse 72-87, chorus 88-103, chorus in E minor without drums 104-119, outro 120-124.
@@ -69,13 +69,16 @@ CHORUS_END = ' '.join(BODY_C + [CG_END])
 CH = {
     'D#m': (3, (3, 6, 10)), 'D#m/A#': (10, (3, 6, 10)), 'Bmaj7': (11, (11, 3, 6, 10)), 'C#': (1, (1, 5, 8)),
     'C#s2': (1, (1, 3, 8)), 'Dm': (2, (2, 5, 9)), 'A#7/D': (2, (10, 2, 5, 8)), 'G#7': (8, (8, 3, 6)),
-    'G#6': (8, (8, 3, 5)), 'F#s2': (6, (6, 8, 1)), 'D#5/D': (2, (3, 10)), 'D#5': (3, (3, 10)), 'F#x': (6, (6, 8, 3)), 'D#/G': (7, (7, 10, 3)),
+    'G#6': (8, (8, 3, 5)), 'F#s2': (6, (6, 8, 1)), 'D#5/D': (2, (3, 10)), 'D#5': (3, (3, 10)), 'F#x': (6, (6, 8, 3)), 'Em7/G': (7, (4, 7, 11, 2)),
     'Esus4': (4 - 1, (4 - 1, 9 - 1, 11 - 1)),         # the outro is transposed up like the last chorus
 }
 RIFF_CH = [['D#5'], ['D#5', 'G#7'], ['D#5'], ['D#5', 'F#x']] * 2      # power chords, as in the original
 VERSE_CH = [['D#m'], ['D#m'], ['Bmaj7'], ['C#', 'Dm'], ['D#m'], ['D#m', 'G#6'], ['Bmaj7'], ['C#', 'D#5/D'],
             ['D#m'], ['D#m'], ['D#m/A#', 'Bmaj7'], ['C#', 'Dm'], ['D#m'], ['D#m'], ['Bmaj7'], ['C#', 'Dm']]
-CHORUS_CH = [['Bmaj7'], ['C#s2'], ['D#m'], ['D#m']] * 3 + [['Bmaj7'], ['C#s2'], ['D#m'], ['D#m', 'D#m', 'G#7', 'D#/G']]
+# the end of the chorus before the last one (bar 103) turns to E minor through G#7 and Em7/G (G B D E in the original);
+# the end of the first one (bar 47, the tom fill) stays on D#m (the guitars of the original hold D#5)
+CHORUS_CH = [['Bmaj7'], ['C#s2'], ['D#m'], ['D#m']] * 3 + [['Bmaj7'], ['C#s2'], ['D#m'], ['D#m', 'D#m', 'G#7', 'Em7/G']]
+CHART_FIX = {47: ['D#m']}
 QUIET_CH = CHORUS_CH[:12] + [['Bmaj7'], ['C#s2'], ['D#m'], ['C#s2', 'G#7']]
 
 FORM = [('intro', 0, 8), ('riff', 8, 8), ('verse', 16, 16), ('chorus', 32, 16), ('quiet', 48, 16), ('riff', 64, 8),
@@ -93,6 +96,7 @@ def chart():
             row = rows[i % len(rows)]
             if name in ('chorusE', 'outro') and i == n - 1 and len(row) > 1:
                 row = row[:1]                       # the end of the song: no walk down
+            row = CHART_FIX.get(b0 + i, row)
             ln = 16 // len(row)
             out[b0 + i] = [(16 * (b0 + i) + j * ln, ln, c, tr) for j, c in enumerate(row)]
     return out
@@ -263,6 +267,8 @@ RIFF_SUB = 2.0                                  # dB of the deep bass (a sine on
 # hats (on the beats, with the kick) do not raise them.
 INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 16.0, 0.0), 'HH': ((4,), P.NZ_HAT, 11.0, 22.0),
                'OH': ((4,), P.NZ_HAT, 9.0, 0.0), 'CR': ((5,), P.NZ_CRASH, -2.0, 0.0)}
+STOP_GTR = ('a#2', 'g#2', 'a#2', 'f#2')         # the guitars after the stop in bar 63 (roots of power chords)
+STOP_BASS = ('g#2', 'f#2')
 SNARE_BODY = 46                                 # the body of the snare: A#2 (the original's ~118 Hz)
 SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
 
@@ -351,21 +357,26 @@ def arrange(song):
             if st < stop:
                 ln = min(ln, stop - st)
                 s.note(0, st, ln, k, 3.0, P.LEAD, vib=3 if ln >= 6 else None)
-                s.note(2, st + 3, ln, k + DETUNE[2], 13.0, P.SHADOW)
+                if st + 3 < stop:
+                    s.note(2, st + 3, min(ln, stop - st - 3), k + DETUNE[2], 13.0, P.SHADOW)
         s.ramp('bright', 0, 16 * b0, 16 * b0, 3, 3)
         p.chords(b0, 15, P.PAD, 6.0, chans=(3, 4, 5), lo=62, hi=76)
         p.bass(b0, 15, P.SUB, 2.0, 'long')
         p.drums(b0, 15, {'SD': ('........x.......', 7), 'HH': (SHAKER, 11)})
-        # bar 63: two snare hits and the big stop on beat 3, then silence until the riff
+        # bar 63: two snare hits and the big stop on beat 3; then the guitars ring power chords in 8ths into the
+        # riff, A#5 G#5 A#5 F#5 over the bass G# F# (measured in the side of the stereo of the original: silent
+        # before the stop, full after it)
         b = b0 + 15
         s.hit(16 * b + 2, 'SD', 5.0)
         s.hit(16 * b + 4, 'SD', 3.0)
         for inst in ('BD', 'SD', 'CR'):
             s.hit(stop, inst, 0.0)
-        bass, tones = chord_at(stop)
-        for ch, k in zip((3, 4, 5), tones_in(tones, 60, 72)):
-            s.note(ch, stop, 8, k, 4.0, P.GATE, gate=2)
-        s.note(1, stop, 8, 34 + (bass - 34) % 12, 0.0, P.BASS, gate=2)
+        for i, root in enumerate(STOP_GTR):
+            for ch, fifth in ((0, 0), (2, 7)):
+                s.note(ch, stop + 2 * i, 2, key(root) + fifth + RIFF_DETUNE[ch], att=1.0 + RIFF_GTR, patch=P.GRIT)
+        for i, root in enumerate(STOP_BASS):
+            s.note(1, stop + 4 * i, 4, key(root), 0.0, P.DRIVE)
+            s.note(5, stop + 4 * i, 4, key(root), -MIX[5] + RIFF_SUB, P.DEEP)
 
     # ---- the form
     riff(8)

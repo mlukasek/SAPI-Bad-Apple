@@ -39,9 +39,6 @@ SUB = patch('sub', op(mult=1, tl=20, ar=13, dr=2, sl=2, rr=6, ksl=1),
 # string / supersaw pad: feedback 7, half-sine carrier, slow attack and release, vibrato (chorus)
 PAD = patch('pad', op(mult=1, tl=18, ar=6, dr=1, sl=1, rr=5, ksl=1, vib=1),
             op(mult=1, tl=0, ar=5, dr=1, sl=1, rr=5, vib=1, ws=1), fb=7)
-# gated saw (the chord of the stop in bar 63): full sustain, fast release
-GATE = patch('gate', op(mult=1, tl=12, ar=15, dr=1, sl=1, rr=10, ksl=1),
-             op(mult=1, tl=0, ar=15, dr=1, sl=1, rr=10), fb=6)
 # The riff: distorted basses. The original's riff falls ~3 dB per octave to 4 kHz like a sawtooth; the closest
 # patches in the SAPIemu lab (work/lab_bass.py, third octaves of a D#2 against a saw): feedback 6 with a half-sine
 # carrier (within 2 dB), and the modulator at the double (rougher, like a distorted guitar). The attack bites:
