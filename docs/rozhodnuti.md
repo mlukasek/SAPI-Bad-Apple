@@ -67,7 +67,7 @@ standardní knihovně):
 salience středu a stran sterea; autor první verzi s vlastním intrem zvonků odmítl, protože originál začíná
 bubny a činely):
 - **Intro 0–7: jen bicí.** Kopák na doby, virbl na 2 a 4 s vírem šestnáctin na konci sudých taktů, činely
-  na osminy, crash na začátku; kopák je laděný kolem A#1 (58 Hz). Takt 7 graduje do riffu.
+  na osminy, crash na začátku; kopák je laděný kolem 54 Hz (u nás A1). Takt 7 graduje do riffu.
 - **Riff 8–15, 64–71:** basová linka v šestnáctinách, pod ní tiše držená kvinta D#4 + A#4 (power chord).
   Podrobněji v odstavci „Riff“ níže.
 - **Sloka:** široká držená plocha (struny) D#m, basa osminy s důrazem mezi doby, hi-haty mezi dobami.
@@ -158,16 +158,25 @@ nepoznáš. Výsledky:
 `work/lab_kick2.py` a `lab_body.py`:
 - **Úder kopáku** má v originálu v prvních 50 ms vrchol na 100–125 Hz a nad 160 Hz skoro nic. Náš měl úder níž
   a v 200–500 Hz o 5–8 dB víc. To byl cvak modulátoru a šum ocasů hi-hatů, které hrají na dobách s kopákem.
-  - Kopák je teď čistý sinus (modulátor ztlumený). Úder dává rychlý sjezd výšky po tikách: E3, C3, G2, D#2,
-    pak A#1 (`BD_SWEEP`).
+  - Úder kopáku dává rychlý sjezd výšky po tikách: C#3, G#2, D2, pak A1 (`BD_SWEEP`). Modulátor už nemá
+    cvaknutí.
   - Ocasy jsou o 3 dB tišší a akcenty hi-hatů na dobách je nezesilují.
-- **Tělo virblu:** na dobách 2 a 4 má originál v 80–250 Hz o 15–20 dB víc než náš šumový virbl, to je ten chybějící
-  „bas“. Melodický kanál k němu teď hraje sinus s mírnou zpětnou vazbou, který sjede z G3 na D2 za 9 tiků
-  (`SNARE_BODY`, nástroj `BODY`). V intru hraje na kanálech 0 a 1 (rozladěné o 15 centů), v riffu na kanálu 3.
-  Plocha v riffu má proto jen jeden hlas.
-  - Čistý sinus měl málo energie v 200–500 Hz (o 10 dB méně než originál), silné harmonické zase příliš
-    (o 10 dB víc). Zpětná vazba 2 a modulátor TL 34 jsou mezi tím.
-- **Výsledek v intru:** pásma 40 Hz–16 kHz do ±3 dB od originálu, jen 630–1200 Hz o 6 dB méně (praskot virblu).
+- **Tělo virblu:** na dobách 2 a 4 má originál v 80–250 Hz o 15–20 dB víc než náš šumový virbl.
+- **Tónovost** (autor k verzi s čistým sinusem a klouzavým tělem virblu: „nezní to jako buben, spíš jako by
+  někdo pusou dělal bububu, mumumu; bubny mají spíš neutrální šumový tón“). `work/bodyflat.py` měří špičky nad
+  mediánem spektra v 40–400 Hz, 50–200 ms po úderu:
+  - **Originál:** kopák má tón 54 Hz (+28 dB) a harmonické 108 a 285 Hz asi 19 dB pod ním. Virbl má pevný tón
+    kolem 118 Hz jen +10 dB nad šumem.
+  - **Naše verze se sinusem:** kopák měl čistý tón (+37 dB) bez harmonických a tělo virblu klouzalo z G3 na D2.
+  - **Teď:**
+    - kopák na A1 (55 Hz) se slabým stálým modulátorem (TL 52), takže 108 Hz je 15 dB pod základním tónem;
+    - tělo virblu je krátký sinus na pevném A#2 (117 Hz, −18 dB za 0,1 s, `SNARE_BODY`, nástroj `BODY`), o 9 dB
+      pod virblem, na jednom kanálu (intro 0, riff 3).
+
+    Originál má v basech šum (dozvuk místnosti), který OPL2 nevytvoří: šum ze zpětné vazby je bílý a pod
+    500 Hz ho je málo. Proto i naše slabší tóny vyčnívají nad medián víc.
+- **Výsledek v intru:** pásma do ±3 dB od originálu kromě 250–500 Hz (−7 dB, tělo virblu je teď slabší) a
+  630–1200 Hz (−6 dB, praskot virblu).
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule

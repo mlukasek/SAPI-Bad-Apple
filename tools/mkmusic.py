@@ -47,13 +47,13 @@ DRUM_OP = {'SD': P.SD, 'HH': P.HH, 'OH': P.OH, 'CR': P.CR, 'TOM': P.TOM, 'CYM': 
 # instruments sharing an operator (only the envelope differs): the operator is switched before the hit
 SHARED = {'HH': 'hat', 'OH': 'hat', 'CR': 'hat'}
 BD_BASE = 0x20 | 0x40               # rhythm mode, deep vibrato (14 cent)
-RHYTHM_KEYS = {6: 34}                   # BD A#1 like the kick of the original, it sweeps from above (BD_SWEEP)
+RHYTHM_KEYS = {6: 33}                   # BD A1 like the kick of the original, it sweeps from above (BD_SWEEP)
 # Channels 7 and 8 drive the noise of HH and SD (and TOM, CYM): high frequencies make them hiss like the drums of
 # the original instead of ringing (measured in SAPIemu, docs/rozhodnuti.md). 4.5 kHz and 1.2 kHz leave no tonal
 # peak under 4.9 kHz in HH and SD (at 6 kHz / 6 kHz the hat had one at 1.7-2 kHz). TOM changes ch 8 for its
 # pitch; the next hit of the other drums puts it back.
 RHYTHM_HZ = {7: 4500.0, 8: 1200.0}
-BD_SWEEP = (49, 45, 40, 36)     # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]: the punch of the
+BD_SWEEP = (49, 44, 38)         # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]: the punch of the
                                 # original's kick is at 100-125 Hz in its first 50 ms (work/kickspec.py, lab_kick2.py)
 BD_GATE = 17                    # ticks: the kick holds (sustain) and is cut off after ~280 ms like the original
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free

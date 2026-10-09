@@ -76,17 +76,19 @@ NZ_SNARE = noise('nz_snare', 5)      # the reverb of the snare
 NZ_CRASH = noise('nz_crash', 4)      # the tail of the crash
 NOISE_KEY = 72                       # the key of the noise notes (C5): any key is noise
 
-# the body of the snare (the original's snare has 15-20 dB more in 80-250 Hz than the noise of the rhythm SD):
-# a dropping sine, it dies by itself (-9 dB in 0.1 s; work/lab_body.py); harmonics put too much into 250-500 Hz
-BODY = patch('body', op(mult=1, tl=34, ar=15, dr=6, sl=15, rr=6, egt=0),
-             op(mult=1, tl=0, ar=15, dr=6, sl=15, rr=6, egt=0), fb=2)
+# the body of the snare: the original's has a steady tone at ~118 Hz about 10 dB over its noise
+# (work/bodyflat.py); a short sine that dies by itself (-18 dB in 0.1 s; work/lab_body.py). A sliding, longer
+# body sounded like a hummed "boo" (author).
+BODY = patch('body', op(mult=1, tl=63, ar=15, dr=7, sl=15, rr=7, egt=0),
+             op(mult=1, tl=0, ar=15, dr=7, sl=15, rr=7, egt=0))
 
 # rhythm mode: one operator each (BD has both)
-# kick: a sine (the modulator is silent: its click put 200-500 Hz into the attack, 5-8 dB over the original's);
-# the punch comes from the pitch sweep (tools/mkmusic.py BD_SWEEP); the deep body holds and is cut off after
-# ~280 ms (BD_GATE), measured in the intro of the original. 4 dB softer than the short kick before: the held
-# body has more energy.
-BD = patch('bd', op(mult=0, tl=63, ar=15, dr=8, sl=4, rr=12, egt=0),
+# kick: the punch comes from the pitch sweep (tools/mkmusic.py BD_SWEEP); the deep body (A1, the original's is at
+# 54 Hz) holds and is cut off after ~280 ms (BD_GATE), measured in the intro of the original. A pure sine body
+# sounded like a hummed "mmm" (author); the original's has its harmonics ~19 dB under it: a weak, steady
+# modulator (work/lab_kick3.py). No click: a decaying modulator put 200-500 Hz into the attack, 5-8 dB over the
+# original's. 4 dB softer than the short kick before: the held body has more energy.
+BD = patch('bd', op(mult=1, tl=52, ar=15, dr=0, sl=0, rr=11, egt=1),
            op(mult=1, tl=5, ar=15, dr=5, sl=2, rr=11, egt=1), fb=0)
 # With channels 7 and 8 at 4.5 and 1.2 kHz (tools/mkmusic.py RHYTHM_HZ) SD and HH are noise; HH mult 15 also brightens SD.
 SD = op(mult=1, tl=0, ar=15, dr=8, sl=15, rr=9, egt=0)

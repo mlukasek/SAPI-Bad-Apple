@@ -130,10 +130,10 @@ pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou
 | 1 | basa: osminy s důrazem mezi doby, v riffu šestnáctinová linka (`DRIVE`), v tichých místech sub basa |
 | 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií; v riffu druhá kytara |
 | 3, 4 | plocha (pad), ve sloce a v tichém refrénu s kanálem 5 třemi hlasy; v riffu 3 tělo virblu, 4 plocha |
-| 0, 1 v intru | tělo virblu (`SNARE_BODY`) |
+| 0 v intru | tělo virblu (`SNARE_BODY`) |
 | 3–5 v intru | šumové ocasy bicích (dozvuk virblu, hi-hatů a crashe: `INTRO_TAILS`) |
 | 5 | arpeggio (pluck) v refrénech, třetí hlas plochy; v riffu sinus pod basou (`DEEP`) |
-| 6–8 | bicí: BD s klesající výškou (A#1), SD, HH jako zavřený a otevřený hi-hat i crash, TOM ve vířeních; CYM se nehraje (kovový bez šumu) |
+| 6–8 | bicí: BD s klesající výškou (A1), SD, HH jako zavřený a otevřený hi-hat i crash, TOM ve vířeních; CYM se nehraje (kovový bez šumu) |
 
 **Přehrávač not** (`tools/mkmusic.py`):
 - Krok je šestnáctina (138 BPM), takt 0 začíná 1,39 s po prvním VBI. Tik = zaokrouhlený čas × 59,94.
@@ -143,7 +143,7 @@ pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou
 - Legato bez nového náběhu (`legato`, `glide` = sklouznutí výšky po tikách).
 - Nota, po které hned následuje další, se vypne o tik dřív, aby v tiku náběhů nebyly i vypínací zápisy.
 - Změna nástroje se zapíše až 24 tiků předem, když kanál nehraje.
-- Kopák: kanál 6 sjede po tikách z E3 přes C3, G2 a D#2 na A#1 (`BD_SWEEP`). Drží 17 tiků, pak přehrávač
+- Kopák: kanál 6 sjede po tikách z C#3 přes G#2 a D2 na A1 (`BD_SWEEP`). Drží 17 tiků, pak přehrávač
   vynuluje jeho bit v BDh (`BD_GATE`), pokud mezitím nepřišel nový úder.
 - HH, otevřený HH a crash jsou týž operátor s jiným doznětím: přepnutí stojí dva zápisy (DR/AR, SL/RR).
 - Kanály 7 a 8 jsou na 4,5 a 1,2 kHz (`RHYTHM_HZ`): virbl a hi-hat jsou pak šum, ne kovový tón. TOM kanál 8 přeladí,
