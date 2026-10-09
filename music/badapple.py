@@ -225,6 +225,12 @@ MIX = {0: 4.0, 1: 0.0, 2: 4.0, 3: 6.0, 4: 6.0, 5: 5.0, 'drums': 0.0}
 # detune of the accompanying voices against each other (semitones): the beating thickens the sound like the
 # chorus of the synths of the original (the pure FM tones measured too clean)
 DETUNE = {2: 0.10, 3: -0.08, 4: 0.08, 5: 0.04}
+# the riff line per half bar (transcribed): D#, then into G#7 and F# at the end of the odd bars
+RIFF_A = [key(n) for n in 'd#2 d#2 d#2 d#3 d#3 d#3 c#3 d#3'.split()]
+RIFF_G = [key(n) for n in 'd#2 d#2 d#3 f#3 g#2 g#2 f#3 g#2'.split()]
+RIFF_F = [key(n) for n in 'g#2 g#2 f#2 g#2 f#2 f#2 d#3 f#3'.split()]
+RIFF_DETUNE = {0: 0.12, 2: -0.12}                # the two guitars against the bass
+RIFF_GTR = 1.0                                  # dB of the guitars under the bass
 SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
 
 
@@ -237,19 +243,28 @@ def arrange(song):
     # on the 8ths, a crash at the start, a snare run at the end of every other bar; bar 7 rises to the riff
     for b in range(7):
         p.drums(b, 1, {'BD': (FOUR, 0), 'SD': (TWO_FOUR if b % 2 else '....x.......xxxx', 3),
-                       'HH': ('X.x.X.x.X.x.X.x.', 8)})
+                       'HH': ('X.x.X.x.X.x.X.x.', 9.5)})
     s.hit(0, 'CR', 0.0)
     for b in (2, 4, 6):
-        s.hit(16 * b, 'CR', 6.0)
+        s.hit(16 * b, 'CR', 8.0)
     p.drums(7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.x.x.', 3)})
     for i in range(8):
         s.hit(16 * 7 + 8 + i, 'OH', 14.0 - 1.5 * i)        # a rising wash of hats into the riff
 
     def riff(b0):
-        # held D#5 power chord (D#4 + A#4 like the original), the gated saw pulsing, the bass held, full beat
-        p.chords(b0, 8, P.PAD, 7.0, lo=60, hi=72, skip_bass=False)
-        p.chords(b0, 8, P.GATE, 11.0, rhythm=(1, 3, 5, 7, 9, 11, 13, 15), gate=0.6, chans=(5, 2), lo=62, hi=76)
-        p.bass(b0, 8, P.BASS, 1.0, 'long')
+        # the riff of the original: a driving 16th line of distorted basses (D#2 D#2 D#2 D#3 D#3 D#3 C#3 D#3,
+        # through G# and F# at the end of the odd bars), the bass in the middle and two guitars doubled around
+        # it (measured: the same line in the center and the sides, a saw-like spectrum to 4 kHz); the power chord
+        # held quietly under it, full beat
+        for b in range(b0, b0 + 8):
+            line = RIFF_A + (RIFF_A if b % 2 == 0 else RIFF_G if b % 4 == 1 else RIFF_F)
+            for i, k in enumerate(line):
+                acc = 0.0 if i % 8 in (3, 7) else 1.0            # the syncopes push
+                s.note(1, 16 * b + i, 1, k, att=acc, patch=P.DRIVE)
+                if b < b0 + 7 or i < 14:                  # the guitars stop before the verse (time to switch)
+                    for ch in (0, 2):
+                        s.note(ch, 16 * b + i, 1, k + RIFF_DETUNE[ch], att=acc + RIFF_GTR, patch=P.GRIT)
+        p.chords(b0, 8, P.PAD, 11.0, lo=60, hi=72, skip_bass=False)
         p.drums(b0, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': (EIGHTS, 9), 'OH': (OFF8, 7)})
         p.drums(b0 + 7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.xxxx', 3), 'HH': (OFF8, 9)})
         s.hit(16 * b0, 'CR', 1.0)

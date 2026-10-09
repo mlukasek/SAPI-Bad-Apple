@@ -49,9 +49,10 @@ SHARED = {'HH': 'hat', 'OH': 'hat', 'CR': 'hat'}
 BD_BASE = 0x20 | 0x40               # rhythm mode, deep vibrato (14 cent)
 RHYTHM_KEYS = {6: 34}                   # BD A#1 like the kick of the original, it sweeps from above (BD_SWEEP)
 # Channels 7 and 8 drive the noise of HH and SD (and TOM, CYM): high frequencies make them hiss like the drums of
-# the original instead of ringing (measured in SAPIemu, docs/rozhodnuti.md). TOM changes ch 8 for its pitch; the
-# next hit of the other drums puts it back.
-RHYTHM_HZ = {7: 6000.0, 8: 6000.0}
+# the original instead of ringing (measured in SAPIemu, docs/rozhodnuti.md). 4.5 kHz and 1.2 kHz leave no tonal
+# peak under 4.9 kHz in HH and SD (at 6 kHz / 6 kHz the hat had one at 1.7-2 kHz). TOM changes ch 8 for its
+# pitch; the next hit of the other drums puts it back.
+RHYTHM_HZ = {7: 4500.0, 8: 1200.0}
 BD_SWEEP = (40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free
 

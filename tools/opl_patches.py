@@ -39,9 +39,17 @@ SUB = patch('sub', op(mult=1, tl=20, ar=13, dr=2, sl=2, rr=6, ksl=1),
 # string / supersaw pad: feedback 7, half-sine carrier, slow attack and release, vibrato (chorus)
 PAD = patch('pad', op(mult=1, tl=18, ar=6, dr=1, sl=1, rr=5, ksl=1, vib=1),
             op(mult=1, tl=0, ar=5, dr=1, sl=1, rr=5, vib=1, ws=1), fb=7)
-# gated saw of the riffs: full sustain, fast release (the notes are cut short)
+# gated saw (the chord of the stop in bar 63): full sustain, fast release
 GATE = patch('gate', op(mult=1, tl=12, ar=15, dr=1, sl=1, rr=10, ksl=1),
              op(mult=1, tl=0, ar=15, dr=1, sl=1, rr=10), fb=6)
+# The riff: distorted basses. The original's riff falls ~3 dB per octave to 4 kHz like a sawtooth; the closest
+# patches in the SAPIemu lab (work/lab_bass.py, third octaves of a D#2 against a saw): feedback 6 with a half-sine
+# carrier (within 2 dB), and the modulator at the double (rougher, like a distorted guitar). The attack bites:
+# the modulator and the carrier fall 3 dB after it; the fast release separates the 16ths.
+DRIVE = patch('drive', op(mult=1, tl=13, ar=15, dr=4, sl=1, rr=10),
+              op(mult=1, tl=0, ar=15, dr=4, sl=1, rr=10, ws=1), fb=6)
+GRIT = patch('grit', op(mult=2, tl=13, ar=15, dr=4, sl=1, rr=10, ws=1),
+             op(mult=1, tl=0, ar=15, dr=4, sl=1, rr=10, ws=1), fb=7)
 # pluck of the arpeggios: bright attack that dies down
 PLUCK = patch('pluck', op(mult=1, tl=12, ar=15, dr=5, sl=4, rr=7, egt=0, ksl=1),
               op(mult=1, tl=0, ar=15, dr=6, sl=8, rr=7, egt=0), fb=6)
@@ -49,7 +57,7 @@ PLUCK = patch('pluck', op(mult=1, tl=12, ar=15, dr=5, sl=4, rr=7, egt=0, ksl=1),
 # rhythm mode: one operator each (BD has both)
 BD = patch('bd', op(mult=0, tl=14, ar=15, dr=8, sl=4, rr=12, egt=0),         # a little click, long deep body
            op(mult=1, tl=0, ar=15, dr=6, sl=15, rr=12, egt=0), fb=3)
-# With channels 7 and 8 at 6 kHz (tools/mkmusic.py RHYTHM_HZ) SD and HH are noise; HH mult 15 also brightens SD.
+# With channels 7 and 8 at 4.5 and 1.2 kHz (tools/mkmusic.py RHYTHM_HZ) SD and HH are noise; HH mult 15 also brightens SD.
 SD = op(mult=1, tl=0, ar=15, dr=8, sl=15, rr=9, egt=0)
 HH = op(mult=15, tl=0, ar=15, dr=9, sl=15, rr=5, egt=0)      # closed hat; OH and CR differ only in DR, RR: two writes
 OH = op(mult=15, tl=0, ar=15, dr=7, sl=15, rr=5, egt=0)      # open hat

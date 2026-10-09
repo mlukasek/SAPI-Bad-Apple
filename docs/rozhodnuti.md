@@ -68,7 +68,8 @@ salience středu a stran sterea; autor první verzi s vlastním intrem zvonků o
 bubny a činely):
 - **Intro 0–7: jen bicí.** Kopák na doby, virbl na 2 a 4 s vírem šestnáctin na konci sudých taktů, činely
   na osminy, crash na začátku; kopák je laděný kolem A#1 (58 Hz). Takt 7 graduje do riffu.
-- **Riff 8–15, 64–71:** držená kvinta D#4 + A#4 bez tercie (power chord), pulzující syntezátor, držená basa.
+- **Riff 8–15, 64–71:** basová linka v šestnáctinách, pod ní tiše držená kvinta D#4 + A#4 (power chord).
+  Podrobněji v odstavci „Riff“ níže.
 - **Sloka:** široká držená plocha (struny) D#m, basa osminy s důrazem mezi doby, hi-haty mezi dobami.
 - **Refrén:** široká plocha, basa osminy, plný rytmus.
 - **Tichý refrén 48–62:** bez kopáku, tlesknutí na 3. dobu, hlas zpívá dál. **Takt 63:** dva údery virblu a
@@ -100,6 +101,30 @@ registrů YM3812 přes MCP `io_write`, nahrávka jednotlivých úderů a tónů)
   ±3 dB, nad 4 kHz o 3–7 dB méně. Před opravou intro +18 dB v 250–500 Hz a −4 dB v 40–80 Hz, refrén −20 až
   −30 dB nad 1,6 kHz. Hutnost středů (plochost 0,15–0,25 proti 0,45) a vzduch v částech bez bicích zůstávají
   slabší: OPL2 nemá dozvuk ani víc hlasů.
+
+**Riff: razantní basy** (autor: „po bubnech před zpěvem mají být fakt razantní baskytary, v originále je to
+super zvuk“). Měřeno pracovními nástroji `work/riff*.py` (riff proti intru se stejnými bicími, po šestnáctinách
+a pásmech, střed a strany sterea zvlášť):
+- **Linka:** šestnáctiny D#2 D#2 D#2 D#3 D#3 D#3 C#3 D#3 v každé půlce taktu. Lichý takt končí přes G#
+  (d#2 d#2 d#3 f#3 g#2 g#2 f#3 g#2), každý čtvrtý přes F# (g#2 g#2 f#2 g#2 f#2 f#2 d#3 f#3). Stejnou linku
+  hraje střed i obě strany sterea, tedy basa a zdvojené kytary.
+- **Barva:** hustá řada harmonických do 4 kHz, která klesá asi o 3 dB na oktávu, tedy skoro přesně jako pila.
+  Pásmo 1–4 kHz je v riffu o 16 dB silnější než v intru. Naše dřívější verze (držená basa a pulzující akord)
+  měla středy o 10 dB slabší a jen jednotlivé tóny.
+- **Zvuky** (laboratoř `work/lab_bass.py`: třetinooktávy D#2 proti pile, mřížka zpětné vazby, síly modulátoru
+  a vlnových tvarů): `DRIVE` (basa, zpětná vazba 6, nosná půlsinus, do 2 dB od pily) a `GRIT` (kytary,
+  modulátor na dvojnásobku, drsnější). Tvrdý náběh, po něm pokles o 3 dB, rychlé uvolnění odděluje šestnáctiny.
+- **Aranž:** basa na kanálu 1, dvě kytary na kanálech 0 a 2 rozladěné o ±12 centů a o 1 dB tišší. Synkopy
+  (4. a 8. šestnáctina půltaktu) jsou o 1 dB silnější. Kytary končí dvě šestnáctiny před slokou, aby se stihly
+  přepnout nástroje.
+
+**Činely v intru** (autor: „místy ještě trochu zvoní“). Laboratoř `work/lab_hh3.py` a `lab_hh4.py` měřila
+spektrum zprůměrované přes 8 úderů. Jeden úder má vlastní náhodné špičky šumu 10–15 dB, takže z něj tón
+nepoznáš. Výsledky:
+- Při kanálech 7 a 8 na 6 kHz měl hi-hat tón 1,7–2 kHz (16 dB nad okolím).
+- Při 4,5 kHz a 1,2 kHz nemají hi-hat ani virbl žádný tón pod 4,9 kHz. Zůstávají jen špičky nad 5 kHz, které
+  zní jako šustění.
+- Hi-haty v intru jsou navíc o 1,5 dB a crashe o 2 dB tišší.
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule
