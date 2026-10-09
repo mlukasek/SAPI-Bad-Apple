@@ -1,10 +1,10 @@
 # Bad Apple!! pro Tesla SAPI-1
 
-Demo **Bad Apple!!** pro **Tesla SAPI-1** v sestavě „V“ Libora Lasoty. Stínové video Anira (Touhou Project)
-běží celé v rozlišení **256 × 192 při 29,97 snímku/s** na barevné grafice **CGA-1V**. K němu hraje
-**vlastní FM aranžmá** písně Bad Apple!! (Alstroemeria Records feat. nomico) na čipu YM3812 zvukové karty
-**MPH-1V**, synchronizované s obrazem. Demo běží pod CP/M jako `BADAPPLE.COM` a 3 MB dat čte za běhu
-z RAM disku **ZRD-1V** nebo **ZRMD-1**.
+Demo **Bad Apple!!** pro **Tesla SAPI-1** v sestavě „V“ Libora Lasoty. Stínové video あにら (Anira) na hudbu
+z Touhou Project běží celé v rozlišení **256 × 192 při 29,97 snímku/s** na barevné grafice **CGA-1V**. K němu
+hraje **vlastní FM aranžmá** písně Bad Apple!! feat. nomico (Masayoshi Minoshima / Alstroemeria Records) na
+čipu YM3812 zvukové karty **MPH-1V**, synchronizované s obrazem. Demo běží pod CP/M jako `BADAPPLE.COM`
+a 3 MB dat čte za běhu z RAM disku **ZRD-1V** nebo **ZRMD-1**.
 
 ![Čarodějnice na koštěti v noci s hvězdami](docs/img/hvezdy.png)
 
@@ -22,13 +22,10 @@ z RAM disku **ZRD-1V** nebo **ZRMD-1**.
 - **Ověřeno na skutečném SAPI-1** (sestava V, 2026-10-09) a v emulátoru
   [SAPIemu](https://github.com/mlukasek/SAPIemu) 0.3.0-alpha. Podrobnosti a co zbývá ověřit jsou
   v [docs/hw-otazky.md](docs/hw-otazky.md), změny v [CHANGELOG.md](CHANGELOG.md).
-- Pro srovnání nejlepší známé verze na počítačích s 8080/Z80: Vector-06c 64 × 48 při 12,5 snímku/s a PMD 85
-  180 × 70 při 9,1 snímku/s.
 - **Hotový obraz RAM disku** s demem je ve
   [vydání 1.0.0](https://github.com/mlukasek/SAPI-Bad-Apple/releases/tag/v1.0.0)
   (`SAPI-Bad-Apple-1.0.0-ramdisk.zip`: `ramdisk.bin` a `ramdisk.hex`).
-- Repozitář neobsahuje video ani hudbu, jen zdrojáky a nástroje. Ze své kopie videa jde demo vyrobit podle
-  návodu níže.
+- Ze zdrojáků jde demo vyrobit i z vlastní kopie videa podle návodu níže.
 
 ## Jak to funguje
 
@@ -75,8 +72,8 @@ Podrobně v [docs/format.md](docs/format.md) a [docs/rozhodnuti.md](docs/rozhodn
 
 ## Jak demo vyrobit
 
-Repozitář **neobsahuje video ani hudbu** (jsou chráněné autorským právem), proto se `BADAPPLE.DAT` vyrábí
-z vlastní kopie videa:
+Hotové demo je ve vydání. Pro vlastní sestavení ze zdrojáků je potřeba kopie videa, ze které se vyrobí
+`BADAPPLE.DAT`:
 
 1. **Potřeba je:**
    - Python 3, jen standardní knihovna;
@@ -118,8 +115,12 @@ Obraz RAM disku je buď z vydání (`ramdisk.bin`, `ramdisk.hex`), nebo z `build
 
 ## Autoři a poděkování
 
-- **Bad Apple!!:** hudba ZUN (Touhou Gensokyo ~ Lotus Land Story, Touhou Project). Aranžmá Alstroemeria
-  Records (Masayoshi Minoshima), zpěv nomico. Stínové video (PV) Anira.
+- **Bad Apple!! feat. nomico (Shadow Animation Version)**, vydáno 27. 10. 2009 na Niconico Douga:
+  - původní skladba: ZUN (Team Shanghai Alice), Touhou Gensokyo ~ Lotus Land Story;
+  - aranžmá: Masayoshi Minoshima (Alstroemeria Records);
+  - zpěv: nomico;
+  - text: Haruka;
+  - stínová animace: あにら (Anira).
 - **Port na SAPI-1:** Martin Lukášek, 2026, s pomocí Claude (Anthropic). Aranžmá pro YM3812 je vlastní,
   přepsané ze zvuku videa.
 - **Karty sestavy V** (JPR-1V, RAM-1V, AND-1V, DSM-1V, CGA-1V, MPH-1V, ZRD-1V): Libor Lasota.
@@ -128,8 +129,7 @@ Obraz RAM disku je buď z vydání (`ramdisk.bin`, `ramdisk.hex`), nebo z `build
 
 ## Autorská práva
 
-Kód dema a nástroje jsou pod licencí GNU GPL v3 ([LICENSE](LICENSE)). Píseň, aranžmá Alstroemeria Records
-a video patří svým autorům. Repo je proto neobsahuje. Obraz RAM disku ve vydání obsahuje video a hudbu
-převedené pro SAPI-1.
-Několik snímků obrazovky v `docs/img` slouží jen jako ilustrace. Demo je nekomerční projekt pro zachování
+Kód dema a nástroje jsou pod licencí GNU GPL v3 ([LICENSE](LICENSE)). Skladba, její aranžmá, text a video
+patří svým autorům (viz výše), obraz RAM disku ve vydání obsahuje video a hudbu převedené pro SAPI-1. Několik
+snímků obrazovky v `docs/img` slouží jen jako ilustrace. Demo je nekomerční projekt pro zachování
 a oživení historického československého počítače SAPI-1.
