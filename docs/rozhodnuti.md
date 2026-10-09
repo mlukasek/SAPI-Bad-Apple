@@ -65,9 +65,13 @@ překreslí a sousední ne.
 
 **Cena:**
 - Video 2,97 → 3,09 MB.
-- Pozdních snímků bylo víc (256). Těžké snímky (střih, rychlý pohyb) teď proto zkouší mrtvou zónu
-  1, 2, 3, 5, 8 bodů (dřív 1–3). Pozdních snímků je 232, dřív 231.
-- Široká zóna platí jen na jeden snímek, další snímek hranu dorovná.
+- Pozdních snímků bylo víc (256). Těžké snímky (střih, rychlý pohyb) jsem proto nechal zkoušet mrtvou zónu
+  1, 2, 3, 5, 8 bodů (dřív 1–3). Pozdních snímků bylo 232, dřív 231.
+- **Zóna 5 a 8 bodů neprošla.** Autor viděl, že se obraz na chvilku „rozčtverečkuje“.
+  - V rychlém pohybu (0:57, 1:55) tak bylo 100 snímků s více než 1500 špatnými body, obrys se rozpadl na
+    schody a bloky.
+  - S limitem 3 body jsou takové 4 snímky. Hrana se jen opozdí o 1–3 body, tvar zůstane.
+  - Za to je 290 pozdních snímků (1 VBI navíc, na chvíli 20 snímků/s). To je méně vidět než bloky.
 
 **Hvězdy (0:17–0:25):**
 - Ve zdroji je kolem 70 malých šedých teček. Mají 10–80 % světla jednoho našeho bodu, takže je práh 50 % po
@@ -92,7 +96,7 @@ překreslí a sousední ne.
 - Z čárky se stane čára 1 bod vysoká. V každém sloupci se šedí aspoň 15 se rozsvítí nejjasnější bod.
 - Snímek musí mít aspoň 5 čárek. V rychlé pasáži jich je 21–52 na snímek a s tečkami se plynule střídají.
 - Jinde projdou protáhlé lístky a částice (1:01–1:08, 3:03–3:07), které ve zdroji jsou.
-- Video +11 KB, pozdních snímků stále 232.
+- Video +11 KB, pozdních snímků se nezměnilo.
 
 ## Hudba (2026-10-09)
 

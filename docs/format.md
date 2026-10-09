@@ -76,7 +76,8 @@ Pro každý snímek:
 - Intervaly sousedních řádků spojí do stopy, když se levý bajt posune nejvýš o 1.
 - Mrtvá zóna: posun hrany o 1 bod se neposílá, takže chvějící se hrana se nepřekresluje.
   - Tečka, která přibyla nebo zmizela, se pošle vždy.
-  - Ve snímcích, které by se nestihly, roste mrtvá zóna postupně na 2, 3, 5 a 8 bodů.
+  - Ve snímcích, které by se nestihly, roste mrtvá zóna postupně na 2 a 3 body.
+    Širší zóna rozbila obrys na bloky, je lepší snímek o VBI zpozdit.
   - Zuby, které by tím vznikly na svislých hranách (úseky nejvýš 3 řádků), kodér vrátí podle zdroje (`mend`).
 - Obraz zdroje: práh 50 % po zmenšení plošným průměrem a hvězdy (malé šedé tečky na tmavém pozadí jako jeden
   bílý bod, rozmazané hvězdy jako čára 1 bod vysoká), viz [rozhodnuti.md](rozhodnuti.md).

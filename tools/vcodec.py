@@ -460,9 +460,10 @@ def vbis_needed(cyc, start):
     return need
 
 
-# Dead zones tried in turn until the frame makes it in 2 VBIs. The wide ones only in the heavy frames (a cut, fast
-# motion): an edge lags there for a frame, but fewer frames are late and dropped.
-DEADZONES = (1, 2, 3, 5, 8)
+# Dead zones tried in turn until the frame makes it in 2 VBIs. The wider ones only in the heavy frames (a cut, fast
+# motion): an edge lags there for a frame, but fewer frames are late. Zones of 5 and 8 pixels broke the outlines
+# into blocks and steps for a few frames (0:57, 1:55; author): a frame a VBI late shows less.
+DEADZONES = (1, 2, 3)
 
 
 def shown_picture(shown, img, z):
