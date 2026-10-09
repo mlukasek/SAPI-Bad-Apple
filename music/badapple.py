@@ -203,6 +203,16 @@ class Parts:
                 for i, st in enumerate(range(s, s + ln, every)):
                     self.s.note(5, st, every, ks[i % len(ks)], att, patch)
 
+    def tails(self, s0, s1, spec):
+        """Noise tails of the drums hit in steps s0..s1 (the reverb and the wash of the original):
+        spec {instrument: (channels, patch, att over the hit)}; a tail lasts until the next one on its channel and ends
+        two steps before s1 (the channel is free to switch its instrument)."""
+        for step, inst, att, key in sorted(h for h in self.s.hits if s0 <= h[0] < s1):
+            if inst in spec:
+                chans, patch, extra = spec[inst]
+                for ch in chans:
+                    self.s.note(ch, step, min(16, s1 - 2 - step), P.NOISE_KEY, att + extra - MIX[ch], patch)
+
     def drums(self, b0, n, pattern):
         """pattern: {instrument: (16 chars, att)}; x = hit, X = accent (-3 dB), o = soft (+5 dB)."""
         for b in range(b0, b0 + n):
@@ -230,7 +240,14 @@ RIFF_A = [key(n) for n in 'd#2 d#2 d#2 d#3 d#3 d#3 c#3 d#3'.split()]
 RIFF_G = [key(n) for n in 'd#2 d#2 d#3 f#3 g#2 g#2 f#3 g#2'.split()]
 RIFF_F = [key(n) for n in 'g#2 g#2 f#2 g#2 f#2 f#2 d#3 f#3'.split()]
 RIFF_DETUNE = {0: 0.12, 2: -0.12}                # the two guitars against the bass
-RIFF_GTR = 1.0                                  # dB of the guitars under the bass
+RIFF_GTR = 0.0                                  # dB of the guitars under the bass
+RIFF_SUB = 2.0                                  # dB of the deep bass (a sine on the line: the body of the bass)
+# noise tails of the drums in the intro: {instrument: (channels, patch, dB under the hit)}
+# The original (work/introdecay.py): the snare falls 12 dB in 55 ms and then rings out (-24 dB at 0.2 s): its
+# tail starts ~12 dB under it; the hats fade like a burst of noise (-9 dB at 70 ms, -24 dB at 180 ms) where the
+# rhythm HH is gone in 25 ms: their tail is ~3 dB under them and masks their tonal peaks.
+INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 14.0), 'HH': ((4,), P.NZ_HAT, 8.0), 'OH': ((4,), P.NZ_HAT, 6.0),
+               'CR': ((5,), P.NZ_CRASH, -5.0)}
 SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
 
 
@@ -243,25 +260,29 @@ def arrange(song):
     # on the 8ths, a crash at the start, a snare run at the end of every other bar; bar 7 rises to the riff
     for b in range(7):
         p.drums(b, 1, {'BD': (FOUR, 0), 'SD': (TWO_FOUR if b % 2 else '....x.......xxxx', 3),
-                       'HH': ('X.x.X.x.X.x.X.x.', 9.5)})
-    s.hit(0, 'CR', 0.0)
-    for b in (2, 4, 6):
-        s.hit(16 * b, 'CR', 8.0)
+                       'HH': ('X.x.X.x.X.x.X.x.', 11)})
+    s.hit(0, 'CR', 9.0)                     # the crash of the rhythm HH rings (1-5 kHz partials): soft, its noise
+    for b in (2, 4, 6):                     # tail carries it
+        s.hit(16 * b, 'CR', 14.0)
     p.drums(7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.x.x.', 3)})
     for i in range(8):
         s.hit(16 * 7 + 8 + i, 'OH', 14.0 - 1.5 * i)        # a rising wash of hats into the riff
+    # the drums of the original ring out (reverb, a wash of the hats between the hits): noise tails on the free
+    # melodic channels
+    p.tails(0, 16 * 8, INTRO_TAILS)
 
     def riff(b0):
         # the riff of the original: a driving 16th line of distorted basses (D#2 D#2 D#2 D#3 D#3 D#3 C#3 D#3,
         # through G# and F# at the end of the odd bars), the bass in the middle and two guitars doubled around
-        # it (measured: the same line in the center and the sides, a saw-like spectrum to 4 kHz); the power chord
-        # held quietly under it, full beat
+        # it (measured: the same line in the center and the sides, a saw-like spectrum to 4 kHz), a sine under
+        # the bass for its body (ch 5); the power chord held quietly under it, full beat
         for b in range(b0, b0 + 8):
             line = RIFF_A + (RIFF_A if b % 2 == 0 else RIFF_G if b % 4 == 1 else RIFF_F)
             for i, k in enumerate(line):
                 acc = 0.0 if i % 8 in (3, 7) else 1.0            # the syncopes push
                 s.note(1, 16 * b + i, 1, k, att=acc, patch=P.DRIVE)
-                if b < b0 + 7 or i < 14:                  # the guitars stop before the verse (time to switch)
+                if b < b0 + 7 or i < 14:                  # the guitars and the sine stop before the verse
+                    s.note(5, 16 * b + i, 1, k, att=acc - MIX[5] + RIFF_SUB, patch=P.DEEP)
                     for ch in (0, 2):
                         s.note(ch, 16 * b + i, 1, k + RIFF_DETUNE[ch], att=acc + RIFF_GTR, patch=P.GRIT)
         p.chords(b0, 8, P.PAD, 11.0, lo=60, hi=72, skip_bass=False)

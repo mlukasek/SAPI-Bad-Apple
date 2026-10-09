@@ -54,6 +54,7 @@ RHYTHM_KEYS = {6: 34}                   # BD A#1 like the kick of the original, 
 # pitch; the next hit of the other drums puts it back.
 RHYTHM_HZ = {7: 4500.0, 8: 1200.0}
 BD_SWEEP = (40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
+BD_GATE = 17                    # ticks: the kick holds (sustain) and is cut off after ~280 ms like the original
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free
 
 
@@ -228,6 +229,7 @@ def compile_song(song):
     keyed = {}                      # channel -> True while key on
     var = {'hat': 'HH', 'cym': 'CYM'}
     bd_sweep = []
+    bd_off = None                   # tick of the key off of the kick
     last = max([n['k1'] for lst in plan.values() for n in lst] + list(hits)) + 60
     ticks = []
     for k in range(last + 1):
@@ -286,6 +288,7 @@ def compile_song(song):
             if ins == 'BD':
                 regs.set(dprep, 0x40 + SLOT['BD'], P.BD['car']['ksl'] << 6 | tl_of(P.BD['car'], a))
                 bd_sweep = list(BD_SWEEP)
+                bd_off = k + BD_GATE
                 continue
             o = DRUM_OP[ins]
             slot = SLOT[ins]
@@ -309,6 +312,9 @@ def compile_song(song):
         # a hit sets its bit and leaves it set: the drum dies away by its own decay (DR), as in the lab; a new
         # hit of the same drum clears the bit first (the key must go off for a new attack)
         cur = regs.v.get(0xBD, BD_BASE)
+        if k == bd_off and not bits & BIT['BD']:
+            cur &= ~BIT['BD'] & 0xFF
+            regs.set(drum, 0xBD, cur, True)
         if bits:
             if cur & bits:
                 regs.set(drum, 0xBD, cur & ~bits & 0xFF, True)

@@ -50,13 +50,38 @@ DRIVE = patch('drive', op(mult=1, tl=13, ar=15, dr=4, sl=1, rr=10),
               op(mult=1, tl=0, ar=15, dr=4, sl=1, rr=10, ws=1), fb=6)
 GRIT = patch('grit', op(mult=2, tl=13, ar=15, dr=4, sl=1, rr=10, ws=1),
              op(mult=1, tl=0, ar=15, dr=4, sl=1, rr=10, ws=1), fb=7)
+# the body of the riff bass under DRIVE: a sine. The fundamental of the original's riff is 6 dB stronger than
+# ours; the FM of DRIVE spreads its energy (a sine at full level has an 11 dB stronger fundamental, lab
+# work/lab_layer.py)
+DEEP = patch('deep', op(mult=1, tl=63, ar=15, dr=3, sl=1, rr=10),
+             op(mult=1, tl=0, ar=15, dr=3, sl=1, rr=10))
 # pluck of the arpeggios: bright attack that dies down
 PLUCK = patch('pluck', op(mult=1, tl=12, ar=15, dr=5, sl=4, rr=7, egt=0, ksl=1),
               op(mult=1, tl=0, ar=15, dr=6, sl=8, rr=7, egt=0), fb=6)
 
+# Noise from a melodic channel: the modulator at full level with feedback 7 is chaotic, the sound is almost white
+# noise (SAPIemu lab work/lab_noise.py: flatness 0.97 in 1.5-11 kHz, no peak over 3 dB; the rhythm HH and SD have
+# tonal peaks of 15-19 dB). The tails of the drums of the original (reverb, the wash of the hats) are white noise
+# too. The modulator holds, the carrier decays at its own rate; a tail is a note on a free channel.
+def noise(name, rate):
+    return patch(name, op(mult=15, tl=0, ar=15, dr=0, sl=0, rr=rate),
+                 op(mult=15, tl=0, ar=15, dr=rate, sl=15, rr=rate, egt=0), fb=7)
+
+
+# Measured at C5 (work/lab_nzdecay.py, lab_nzcal.py): rate 6 falls 11 dB in 0.1 s and 21 dB in 0.2 s, rate 5
+# 5 and 11 dB; at full level the noise is as loud as the rhythm SD (1.5-5 kHz) and 5 dB louder than the HH
+# (5-15 kHz). The sine carrier: the abs-sine one has a strong DC and low end that muddies the kick.
+NZ_HAT = noise('nz_hat', 6)          # the wash of the hats
+NZ_SNARE = noise('nz_snare', 5)      # the reverb of the snare
+NZ_CRASH = noise('nz_crash', 4)      # the tail of the crash
+NOISE_KEY = 72                       # the key of the noise notes (C5): any key is noise
+
 # rhythm mode: one operator each (BD has both)
-BD = patch('bd', op(mult=0, tl=14, ar=15, dr=8, sl=4, rr=12, egt=0),         # a little click, long deep body
-           op(mult=1, tl=0, ar=15, dr=6, sl=15, rr=12, egt=0), fb=3)
+# kick: a little click, a deep body that holds and is cut off after ~280 ms (tools/mkmusic.py BD_GATE), measured in
+# the intro of the original
+# (4 dB softer than the short kick before: the held body has more energy)
+BD = patch('bd', op(mult=0, tl=14, ar=15, dr=8, sl=4, rr=12, egt=0),
+           op(mult=1, tl=5, ar=15, dr=5, sl=2, rr=11, egt=1), fb=3)
 # With channels 7 and 8 at 4.5 and 1.2 kHz (tools/mkmusic.py RHYTHM_HZ) SD and HH are noise; HH mult 15 also brightens SD.
 SD = op(mult=1, tl=0, ar=15, dr=8, sl=15, rr=9, egt=0)
 HH = op(mult=15, tl=0, ar=15, dr=9, sl=15, rr=5, egt=0)      # closed hat; OH and CR differ only in DR, RR: two writes

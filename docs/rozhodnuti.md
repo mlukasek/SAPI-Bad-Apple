@@ -114,7 +114,11 @@ a pásmech, střed a strany sterea zvlášť):
 - **Zvuky** (laboratoř `work/lab_bass.py`: třetinooktávy D#2 proti pile, mřížka zpětné vazby, síly modulátoru
   a vlnových tvarů): `DRIVE` (basa, zpětná vazba 6, nosná půlsinus, do 2 dB od pily) a `GRIT` (kytary,
   modulátor na dvojnásobku, drsnější). Tvrdý náběh, po něm pokles o 3 dB, rychlé uvolnění odděluje šestnáctiny.
-- **Aranž:** basa na kanálu 1, dvě kytary na kanálech 0 a 2 rozladěné o ±12 centů a o 1 dB tišší. Synkopy
+- **Hloubka** (autor: „chybí větší hloubka a víc basy, jsou to baskytary“): základní tón riffu byl proti kopáku
+  o 6 dB slabší než v originálu. FM zvuk `DRIVE` rozkládá energii do harmonických: sinus na plné úrovni má
+  základní tón o 11 dB silnější (`work/lab_layer.py`). Pod linku proto hraje sinus `DEEP` na kanálu 5 (o 2 dB
+  pod basou). Teď je pásmo 80 Hz proti kopáku −4 dB (originál −5 dB).
+- **Aranž:** basa na kanálu 1, sinus na kanálu 5, dvě kytary na kanálech 0 a 2 rozladěné o ±12 centů. Synkopy
   (4. a 8. šestnáctina půltaktu) jsou o 1 dB silnější. Kytary končí dvě šestnáctiny před slokou, aby se stihly
   přepnout nástroje.
 
@@ -125,6 +129,29 @@ nepoznáš. Výsledky:
 - Při 4,5 kHz a 1,2 kHz nemají hi-hat ani virbl žádný tón pod 4,9 kHz. Zůstávají jen špičky nad 5 kHz, které
   zní jako šustění.
 - Hi-haty v intru jsou navíc o 1,5 dB a crashe o 2 dB tišší.
+
+**Dozvuky bicích v intru** (autor: „bicí jsou krátké, jako by chyběly dozvuky, celkově plošší“). Pracovní
+`work/introdecay.py` měří energii po pásmech v osminách šestnáctiny, průměr taktů 1–6:
+- **Originál:** hi-haty slábnou jako šumový záblesk (−9 dB za 70 ms, −24 dB za 180 ms) a vzduch mezi údery
+  nemizí. Virbl spadne o 12 dB za 55 ms a pak dozní (−24 dB za 0,2 s). Kopák drží plnou sílu ~280 ms a pak
+  ostře skončí.
+- **Naše dřív:** rytmický HH zmizí o 26 dB za 25 ms, virbl za 50 ms, kopák postupně slábne.
+- **Šum z melodického kanálu:** modulátor na plné úrovni se zpětnou vazbou 7 je chaotický. Výsledek je skoro
+  bílý šum: plochost 0,97 v 1,5–11 kHz a žádný tón přes 3 dB (`work/lab_noise.py`). Ocasy bicích originálu
+  jsou také bílý šum: v třetinooktávách stoupají o 3 dB na oktávu. Nosná musí být sinus, protože absolutní
+  sinus (ws 2) má silnou stejnosměrnou složku a basy, které zakalí kopák.
+- **Ocasy** (`Parts.tails`, `INTRO_TAILS`): ke každému úderu v intru hraje volný melodický kanál šumovou notu,
+  která sama doznívá:
+  - virbl: kanál 3, rychlost 5, asi 12 dB pod ním;
+  - hi-haty: kanál 4, rychlost 6, asi 3 dB pod nimi;
+  - crash: kanál 5, rychlost 4.
+
+  Zvonivý rytmický crash je tišší a jeho zvuk nese šum. Tónové špičky crashe klesly z 16–21 dB nad okolím na
+  ≤ 12 dB (originál ≤ 16 dB), u hi-hatu a virblu z 18–19 na 13 dB.
+- **Kopák:** drží na nosné (EGT, SL 2) a po 17 tikách (280 ms) přehrávač vynuluje jeho bit v BDh (`BD_GATE`).
+  Protože má delší tělo, je o 4 dB tišší.
+- **Výsledek:** obálky všech pásem v intru sedí s originálem. Energie po pásmech v intru a riffu je do ±4 dB,
+  ve sloce a refrénu do ±5 dB, nad 4 kHz o 4–6 dB méně.
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule
