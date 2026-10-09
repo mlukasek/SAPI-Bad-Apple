@@ -177,6 +177,29 @@ nepoznáš. Výsledky:
     500 Hz ho je málo. Proto i naše slabší tóny vyčnívají nad medián víc.
 - **Výsledek v intru:** pásma do ±3 dB od originálu kromě 250–500 Hz (−7 dB, tělo virblu je teď slabší) a
   630–1200 Hz (−6 dB, praskot virblu).
+- **Silnější virbl v intru** (autor: „přidat na intenzitě bubnů, resp. virblu“): virbl, jeho tělo i dozvuk jsou
+  o 2 dB silnější. V intru je pak 250–500 Hz −6,4 dB, 630–1200 Hz −4,5 dB a 1,6–3,2 kHz −1,1 dB proti
+  originálu.
+
+**Melodie zpěvu po slabikách** (autor: „kde zpěvačka dá několik slov, máš jeden nebo dva delší tóny, třeba
+mezi 40–43 s; výškou not si v některých místech také nejsem jist“):
+- **Slabika textu je nota.** Počet mor každého verše sedí přesně na počet not melodie. Sloka má na řádek textu
+  28 nebo 24 mor (7 + 6 + 7 + 8 nebo 4 not), refrén 7 mor na takt (např. „to-ma-do-u ko-to-ba“).
+- **Chyby přepisu:** průměrování přes opakování a Viterbiho průchod (`tools/transcribe.py`) slil sousední
+  slabiky do dlouhých tónů:
+  - 8. takt sloky („shi-ra-na-i?“, „so-re da-ke“, 41–43 s) jsou 4 čtvrtky F–F#–G#–A#, u nás byly F# a G#;
+  - 2.–4. takt refrénu měly 5 not místo 7;
+  - poslední takt refrénu („ku-ro ni su-ru“) je G#4 F#4 F4 C#4 D#4 a nástup A#4 C#5 do dalšího refrénu
+    (před refrénem v e moll B4 D5), u nás bylo dlouhé D#5;
+  - píseň končí na tónice E4 a B4 dohry začíná až v taktu 120.
+- **Ověření:**
+  - pracovní `work/vox/vroll.py`: piano roll středu sterea po jednotlivých taktech, 2 sloupce na šestnáctinu,
+    okno 93 ms;
+  - `work/vox/vscore.py`: která varianta lépe sedí na salienci;
+  - dva MIDI přepisy z `orig/midi` (jen lokálně), které se ve výškách shodují.
+
+  Kde má akord doprovodu tón zpěvu (C#sus2 pod 2. a 14. taktem refrénu), měření C#5 zkresluje a rozhodl text
+  s přepisy. Sjezd D#4–C#4 ve 4. taktu sloky měření potvrdilo, zůstává.
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule

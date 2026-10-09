@@ -40,24 +40,30 @@ def melody(text):
 
 
 # ---- the song: melody (transcribed), D# minor
+# A syllable of the lyrics is a note: the count of the morae of every line fits the count of the notes (the chorus
+# has 7 a bar). Checked against the voice of the original (work/vox/vroll.py: center salience at 2 columns per
+# 16th) and two MIDI transcriptions (orig/midi, only local); where the chord of the backing has the note of the
+# voice (C#sus2 under the 2nd and 14th bars of the chorus), the lyrics and the transcriptions decide.
 
 V1 = 'd#4/2 f4/2 f#4/2 g#4/2 a#4/4 d#5/2 c#5/2 |'
 V2 = 'a#4/4 d#4/4 a#4/2 g#4/2 f#4/2 f4/2 |'
 V3 = 'd#4/2 f4/2 f#4/2 g#4/2 a#4/4 g#4/2 f#4/2 |'
 V4 = 'f4/2 d#4/1 c#4/1 f4/2 f#4/2 f4/2 d#4/2 d4/2 f4/2 |'
-V8A = 'f#4/8 g#4/4 r/4 |'
-V8B = 'f#4/8 g#4/4 d4/4 |'
-VERSE = ' '.join([V1, V2, V3, V4, V1, V2, V3, V8A, V1, V2, V3, V4, V1, V2, V3, V8B])
+V8 = 'f4/4 f#4/4 g#4/4 a#4/4 |'                 # "shi-ra-na-i?", "so-re da-ke": a syllable each
+VERSE = ' '.join([V1, V2, V3, V4, V1, V2, V3, V8, V1, V2, V3, V4, V1, V2, V3, V8])
 
 CA = 'c#5/2 d#5/2 a#4/2 g#4/2 a#4/4 g#4/2 a#4/2 |'
-CB = 'c#5/2 d#5/2 c#5/2 g#4/8 a#4/2 |'
-CC = 'g#4/2 f#4/2 f4/2 c#4/2 d#4/8 |'
-CD = 'f4/2 f#4/2 g#4/2 a#4/8 c#5/2 |'
-CE = 'c#5/2 d#5/2 a#4/2 g#4/2 a#4/2 c#5/2 d#5/2 f5/2 |'
+CC = 'g#4/2 f#4/2 f4/2 c#4/2 d#4/4 c#4/2 d#4/2 |'
+CD = 'f4/2 f#4/2 g#4/2 a#4/2 d#4/4 a#4/2 c#5/2 |'
+CE = 'c#5/2 d#5/2 a#4/2 g#4/2 a#4/4 d#5/2 f5/2 |'
 CF = 'f#5/2 f5/2 d#5/2 c#5/2 a#4/4 g#4/2 a#4/2 |'
-CG = 'd#5/12 r/4 |'
-CHORUS = ' '.join([CA, CB, CC, CD, CA, CA, CC, CD, CA, CA, CC, CD, CA, CE, CF, CG])
-CHORUS_END = ' '.join([CA, CB, CC, CD, CA, CA, CC, CD, CA, CA, CC, CD, CA, CE, CF, 'r/16 |'])   # + the last note
+CG = 'g#4/2 f#4/2 f4/2 c#4/2 d#4/4 a#4/2 c#5/2 |'       # "ku-ro ni su-ru", then up into the next chorus
+CG_UP = 'g#4/2 f#4/2 f4/2 c#4/2 d#4/4 b4/2 d5/2 |'      # ... into the last chorus, a semitone up
+CG_END = 'g#4/2 f#4/2 f4/2 c#4/2 d#4/8 |'               # the end of the song: the tonic held
+BODY_C = [CA, CA, CC, CD, CA, CA, CC, CD, CA, CA, CC, CD, CA, CE, CF]
+CHORUS = ' '.join(BODY_C + [CG])
+CHORUS_UP = ' '.join(BODY_C + [CG_UP])
+CHORUS_END = ' '.join(BODY_C + [CG_END])
 
 # chords: (bass pitch class, chord tones)
 CH = {
@@ -255,7 +261,7 @@ RIFF_SUB = 2.0                                  # dB of the deep bass (a sine on
 # rhythm HH is gone in 25 ms: their tail is ~3 dB under them and masks their tonal peaks.
 # The author found the first version too noisy at the kick: the tails are 3 dB softer and the accents of the
 # hats (on the beats, with the kick) do not raise them.
-INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 17.0, 0.0), 'HH': ((4,), P.NZ_HAT, 11.0, 22.0),
+INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 16.0, 0.0), 'HH': ((4,), P.NZ_HAT, 11.0, 22.0),
                'OH': ((4,), P.NZ_HAT, 9.0, 0.0), 'CR': ((5,), P.NZ_CRASH, -2.0, 0.0)}
 SNARE_BODY = 46                                 # the body of the snare: A#2 (the original's ~118 Hz)
 SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
@@ -269,18 +275,18 @@ def arrange(song):
     # ---- intro (0-7): the drums alone, as in the original: kick on the beats, snare on 2 and 4, the hats
     # on the 8ths, a crash at the start, a snare run at the end of every other bar; bar 7 rises to the riff
     for b in range(7):
-        p.drums(b, 1, {'BD': (FOUR, 0), 'SD': (TWO_FOUR if b % 2 else '....x.......xxxx', 3),
+        p.drums(b, 1, {'BD': (FOUR, 0), 'SD': (TWO_FOUR if b % 2 else '....x.......xxxx', 1),
                        'HH': ('X.x.X.x.X.x.X.x.', 11)})
     s.hit(0, 'CR', 9.0)                     # the crash of the rhythm HH rings (1-5 kHz partials): soft, its noise
     for b in (2, 4, 6):                     # tail carries it
         s.hit(16 * b, 'CR', 14.0)
-    p.drums(7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.x.x.', 3)})
+    p.drums(7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.x.x.', 1)})
     for i in range(8):
         s.hit(16 * 7 + 8 + i, 'OH', 14.0 - 1.5 * i)        # a rising wash of hats into the riff
     # the drums of the original ring out (reverb, a wash of the hats between the hits): noise tails on the free
     # melodic channels
     p.tails(0, 16 * 8, INTRO_TAILS)
-    p.snare_body(0, 16 * 8 - 2, 0, 9.0)
+    p.snare_body(0, 16 * 8 - 2, 0, 7.0)
 
     def riff(b0):
         # the riff of the original: a driving 16th line of distorted basses (D#2 D#2 D#2 D#3 D#3 D#3 C#3 D#3,
@@ -371,13 +377,13 @@ def arrange(song):
     quiet(48)
     riff(64)
     verse(72, second_voice=True)
-    chorus(88, CHORUS)
+    chorus(88, CHORUS_UP)
     p.drums(103, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.xxxx', 3), 'HH': (OFF8, 8)})
     chorus(104, CHORUS_END, tr=1, drums=False)
     s.ramp('bright', 0, 16 * 104, 16 * 104, -3, -3)
 
     # ---- outro (120-124): Esus4 held and fading, the voice holds its last note (the fifth)
-    s.note(0, 16 * 119, 32, key('b4'), 1.5, P.LEAD, vib=3)
+    s.note(0, 16 * 120, 24, key('b4'), 1.5, P.LEAD, vib=3)
     s.ramp('level', 0, 16 * 120, 16 * 122, 0, 30)
     s.note(3, 16 * 120, 80, key('e5') + DETUNE[3], 8.0, P.PAD, vib=8)
     s.note(4, 16 * 120, 80, key('a5') + DETUNE[4], 8.0, P.PAD, vib=8)
