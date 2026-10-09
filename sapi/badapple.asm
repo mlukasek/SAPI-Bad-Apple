@@ -103,6 +103,8 @@ start:
 	ld (vbi_cnt),hl
 	ld hl,-1			; "the flip before frame 0": frame 0 is shown at VBI 1
 	ld (flip_at),hl
+	xor a
+	ld (pend),a
 	ei
 
 ; ---- main loop: one frame
@@ -123,11 +125,13 @@ frame_loop:
 	ld (ring_r),bc
 	jr frame_loop
 .fl_hdr:
-	ld hl,(flip_at)
+	ld hl,(flip_at)			; VBI of the last flip (as it happened: a late frame delays the next ones)
 	ld e,a
 	ld d,0
 	add hl,de
 	ld (next_flip),hl
+	ld a,1
+	ld (pend),a			; from now on the interrupt may find this frame late
 	call vdec_frame			; BC = after the frame
 	ld (ring_r),bc
 	; late? (VBI counter already past the time of the flip)
@@ -144,6 +148,8 @@ frame_loop:
 .fl_ok:
 	ld a,1
 	ld (ready),a
+	xor a
+	ld (pend),a
 	ei
 	ld hl,(frame_cnt)
 	inc hl
@@ -204,7 +210,10 @@ msg_nodat:
 ; Interrupt (RST 38h, 82C54 counter 2, 1300.7 Hz)
 ; Polls the keyboard STROBE and the VBI of CGA-1V. At a VBI: acknowledge
 ; it (the only writer of CONFIG), count it, flip the pages when a frame
-; is ready and its time has come. Then one write of the music stream.
+; is ready and its time has come, advance the clock of the video (it
+; stops while the next frame is late) and set the speed of the music by
+; its lead over the video. Then the music: a tick every ~21.7 calls,
+; one register write per call (music.asm).
 ; =====================================================================
 isr:
 	push af
@@ -225,22 +234,17 @@ isr:
 	ld a,(cfg)
 	or 080h
 	ld (CGA_CFG),a
-	ld hl,mus_vbi
-	inc (hl)
-	xor a
-	ld (mus_wait),a			; the player may go on
+	push de
 	ld hl,(vbi_cnt)
 	inc hl
 	ld (vbi_cnt),hl
 	ld a,(ready)
 	or a
-	jr z,.is_vend
-	push de
+	jr z,.is_nrdy
 	ld de,(flip_at)
 	or a
 	sbc hl,de
-	pop de
-	jp m,.is_vend			; not yet
+	jp m,.is_vadv			; not yet its time
 	ld a,(cfg)			; flip: shown page and CPU page swap
 	xor 003h
 	ld (cfg),a
@@ -248,23 +252,78 @@ isr:
 	ld (CGA_CFG),a
 	xor a
 	ld (ready),a
-.is_vend:
+	ld hl,(vbi_cnt)			; the flip as it happened: the next frames keep their spacing to it
+	ld (flip_at),hl
+	jr .is_vadv
+.is_nrdy:
+	ld a,(pend)			; a frame in the making: late when its VBI has come
+	or a
+	jr z,.is_vadv
+	ld de,(next_flip)
+	or a
+	sbc hl,de
+	jp p,.is_vstop			; late: the clock of the video stops
+.is_vadv:
+	ld hl,mus_lead			; the video advanced by one VBI
+	dec (hl)
+.is_vstop:
+	ld a,(mus_lead)			; speed of the music: -3..10 ticks ahead of the video
+	add a,3
+	jp p,.is_r0
+	xor a
+.is_r0:	cp 14
+	jr c,.is_r1
+	ld a,13
+.is_r1:	add a,a
+	ld e,a
+	ld d,0
+	ld hl,mus_rate
+	add hl,de
+	ld e,(hl)
+	inc hl
+	ld d,(hl)
+	ld (mus_step),de
+	pop de
 	pop hl
 .is_done:
-	ld a,(mus_wait)			; music: one pair, or past an FFh when a VBI came
-	or a
-	jr nz,.is_end			; (29 T when there is nothing to do)
+	ld a,(mus_st)			; music: D7 = pairs to write, D0-D6 = calls to the next tick
+	dec a
+	ld (mus_st),a
+	jp m,.is_busy
+	jr z,.is_tick			; (47 T when there is nothing to do)
+.is_end:
+	pop af
+	ei
+	reti
+.is_busy:
+	and 07Fh
+	jr nz,.is_play
+.is_tick:				; a tick is due: count it, set the countdown to the next one
 	push hl
-	ld hl,(mus_r)
+	ld hl,mus_lead
+	inc (hl)
+	ld hl,mus_pend
+	inc (hl)
+	ld hl,(mus_step)		; calls per tick (8.8)
+	ld a,(mus_frac)
+	add a,l
+	ld (mus_frac),a
+	ld a,h
+	adc a,080h			; and D7: pairs to write
+	ld (mus_st),a
+	jr .is_pl
+.is_play:
+	push hl
+.is_pl:	ld hl,(mus_r)
 	ld a,(hl)
 	cp MUS_END
 	jr c,.is_mw
-	jr z,.is_mi			; end of the music
-	ld a,(mus_vbi)			; FFh: wait for a VBI
+	jr z,.is_idle			; end of the music
+	ld a,(mus_pend)			; FFh: the next tick, if it is due
 	or a
-	jr z,.is_mi
+	jr z,.is_idle
 	dec a
-	ld (mus_vbi),a
+	ld (mus_pend),a
 	inc hl
 	res 2,h				; ring 3800h-3BFFh
 	ld a,(hl)
@@ -279,12 +338,13 @@ isr:
 	res 2,h
 .is_ms:	ld (mus_r),hl
 	pop hl
-.is_end:
 	pop af
 	ei
 	reti
-.is_mi:	ld a,1				; nothing until the next VBI
-	ld (mus_wait),a
+.is_idle:				; nothing to write until the next tick
+	ld a,(mus_st)
+	and 07Fh
+	ld (mus_st),a
 	pop hl
 	pop af
 	ei
@@ -475,7 +535,8 @@ ready:		db 0			; a frame is drawn and waits for its flip
 key_hit:	db 0
 vbi_cnt:	dw 0			; VBIs since the start
 flip_at:	dw 0			; VBI of the flip of the last frame
-next_flip:	dw 0
+next_flip:	dw 0			; VBI of the flip of the frame being drawn
+pend:		db 0			; 1: next_flip is valid, the frame is being drawn
 frame_cnt:	dw 0			; frames drawn
 late_cnt:	dw 0			; frames that were not ready at their VBI
 dat_hdr:	ds 20

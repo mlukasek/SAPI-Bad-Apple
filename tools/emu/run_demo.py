@@ -33,8 +33,9 @@ def word(addr):
 
 def counters(sym):
     c = {k: word(sym[k]) for k in ('frame_cnt', 'late_cnt', 'vbi_cnt')}
-    if 'mus_vbi' in sym:
-        c['mus_vbi'] = read(sym['mus_vbi'], 1)[0]          # VBIs the music player is behind
+    if 'mus_lead' in sym:
+        c['mus_lead'] = int.from_bytes(read(sym['mus_lead'], 1), 'little', signed=True)   # music ahead of the video
+        c['mus_pend'] = read(sym['mus_pend'], 1)[0]        # ticks due, not started
     return c
 
 
@@ -64,8 +65,12 @@ def main():
     if a.wav:
         sm.call('audio_record', start=True)
     t = 0.3
+    chunk = 1000 if a.wav else 120000      # long run_for calls lose audio in the recording of SAPIemu 0.3.0
     for at in [float(x) for x in a.at.split(',') if x]:
-        sm.call('run_for', ms=int((at - t) * 1000))
+        left = int((at - t) * 1000)
+        while left > 0:
+            sm.call('run_for', ms=min(chunk, left))
+            left -= chunk
         t = at
         sm.call('pause')
         p = os.path.join(a.out, f'shot_{at:06.1f}.png')
@@ -73,8 +78,8 @@ def main():
         print(f'{at:6.1f} s: {counters(sym)}  {p}', flush=True)
         sm.call('resume')
     if a.to_end:
-        for _ in range(5):                      # run_until takes at most 120 s
-            r = sm.call('run_until', address=sym['exit'], timeout_ms=120000)
+        for _ in range(600 * 1000 // chunk):    # run_until takes at most 120 s
+            r = sm.call('run_until', address=sym['exit'], timeout_ms=chunk)
             if r.get('reason') != 'timeout' and r.get('stopped') != 'timeout':
                 break
         print('end:', counters(sym), r)

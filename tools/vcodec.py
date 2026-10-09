@@ -11,6 +11,7 @@ tools/mkvdec.py) costs about 80 T per row of a track inside one byte.
 Time: the demo shows a frame at a VBI (59.94 Hz). The decoder starts frame n when frame n-1 is shown; frame n
 is due 2 VBIs later. The encoder simulates that with the cycle model and takes for every frame the source
 frame of its real display time, so a slow frame (a cut) drops the next one instead of delaying the rest.
+The time the interrupt takes depends on the music: build/music.bin must be made first (tools/mkmusic.py).
 
 Stream: per frame 1 B header (VBIs after the previous frame, 0 = end of the video), then the tracks, END.
 
@@ -20,7 +21,9 @@ import argparse
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
 import frames  # noqa: E402
 import mkvdec  # noqa: E402
 import vfmt  # noqa: E402
@@ -35,9 +38,13 @@ PAGE = 0x4000
 # cycle model: T at 4 MHz incl. the waits of CGA-1V measured on the real HW (per access)
 CGA_R, CGA_W = 1.26, 2.43
 VBI_T = 66_733                # 4 MHz / 59.94 Hz
-# The interrupt (sapi/badapple.asm isr, 1300.7 Hz) takes from every VBI: 21.7 calls of 160 T with nothing to do,
-# the VBI itself (~220 T) and the music (~340 T on average: the FFh, 131 T per register write).
-ISR_T_PER_VBI = 4_100
+# The interrupt (sapi/badapple.asm isr, 1300.7 Hz) takes from every VBI: 21.7 calls of 183 T with nothing to do,
+# the VBI itself (~300 T), the tick of the music (~250 T) and 168 T more for each register write of the music.
+# The writes per VBI come from build/music.bin (tools/mkmusic.py; tick k plays at VBI k), the most of the VBI and
+# its neighbours (the player follows the video within a tick or so).
+ISR_BASE_T = 4_550
+ISR_WRITE_T = 168
+MUSIC = os.path.join(ROOT, 'build', 'music.bin')
 FRAME_T = 4_000               # per frame: main loop, frame start, the flip seen up to one interrupt late
 T_READ = 16                   # reading the stream from the RAM disk, per byte (unrolled INI)
 MX_MID_T = 37                 # each further middle byte of an MX row
@@ -287,9 +294,41 @@ def frame_body(page_rows, new_rows, use_clr=True):
     return out, cyc + len(out) * T_READ
 
 
-def vbis_needed(cyc):
-    """VBIs a frame of cyc T of the decoder takes (at least 2: 29.97 fps)."""
-    return max(2, int(-(-(cyc + FRAME_T) // (VBI_T - ISR_T_PER_VBI))))
+def music_writes(path=MUSIC):
+    """Register writes of the music per tick (empty without build/music.bin)."""
+    if not os.path.exists(path):
+        return []
+    st = open(path, 'rb').read()
+    p = 0
+    while st[p] < 0xFE:
+        p += 2
+    out = []
+    while st[p] != 0xFE:
+        if st[p] == 0xFF:
+            out.append(0)
+            p += 1
+        else:
+            out[-1] += 1
+            p += 2
+    return out
+
+
+MUSIC_WRITES = music_writes()
+
+
+def free_t(v):
+    """T of the decoder in VBI v (the interrupt and the music taken away)."""
+    w = max(MUSIC_WRITES[max(0, v - 1):v + 2] or [0])
+    return VBI_T - ISR_BASE_T - ISR_WRITE_T * w
+
+
+def vbis_needed(cyc, start):
+    """VBIs a frame of cyc T of the decoder takes from VBI start on (at least 2: 29.97 fps)."""
+    need, have = 0, 0
+    while have < cyc + FRAME_T or need < 2:
+        have += free_t(start + need)
+        need += 1
+    return need
 
 
 def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
@@ -312,7 +351,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
         for z in range(dz, dz_max + 1):
             new = [shown[y] ^ deadzone(shown[y] ^ img[y], z, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
-            need = vbis_needed(cyc)
+            need = vbis_needed(cyc, flip)
             if need <= 2:
                 break
         if need > 2:
@@ -322,7 +361,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
             img = rows_of(data, src)
             new = [shown[y] ^ deadzone(shown[y] ^ img[y], dz_max, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
-            need = vbis_needed(cyc)
+            need = vbis_needed(cyc, flip)
             target = max(target, flip + need)
         if check:
             v = vram[n & 1]

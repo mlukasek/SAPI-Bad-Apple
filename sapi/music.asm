@@ -1,8 +1,12 @@
 ; Music player of Bad Apple!! for the YM3812 of MPH-1V (docs/format.md, tools/mkmusic.py).
 ;
-; Stream: pairs (register, value); FFh = wait for the next VBI; FEh = end. The pairs before the first FFh are
-; the setup, written by mus_init with the delays of the chip. Then the interrupt (badapple.asm isr) writes at
-; most one pair per call (1300.7 Hz, 770 us apart, so no delays are needed); a VBI lets it past one FFh.
+; Stream: pairs (register, value); FFh = the next tick; FEh = end. The pairs before the first FFh are the
+; setup, written by mus_init with the delays of the chip. Then the interrupt (badapple.asm isr) writes at most
+; one pair per call (1300.7 Hz, 770 us apart, so no delays are needed) and lets the player past an FFh for each
+; tick that is due. Ticks come from a countdown of the calls (mus_step calls per tick, 8.8 fixed point): 21.70
+; at the nominal 59.94 Hz. At each VBI the interrupt sets mus_step from mus_lead, the ticks played minus the VBIs
+; the video advanced: the music runs a little faster or slower to stay with the picture (mus_rate), and when a
+; frame is late the video clock stops, so the music slows down smoothly (by up to 30 %).
 ; The stream comes from the RAM disk into a ring of 4 pages (MUS_RING); the main loop refills a page the
 ; interrupt has left (mus_fill), the interrupt never touches the ports of ZRD-1V.
 
@@ -35,8 +39,13 @@ mus_init:
 	ld a,HIGH MUS_RING
 	ld (mus_w),a
 	xor a
-	ld (mus_vbi),a
-	ld (mus_wait),a
+	ld (mus_pend),a
+	ld (mus_lead),a
+	ld (mus_frac),a
+	inc a
+	ld (mus_st),a			; idle, the first tick at the first call of the interrupt
+	ld hl,(mus_rate+2*3)
+	ld (mus_step),hl
 	ld b,4
 .mi_load:
 	push bc
@@ -117,7 +126,13 @@ ym_write:
 ; ---- variables
 mus_r:		dw 0			; read pointer of the interrupt
 mus_w:		db 0			; page to load next
-mus_vbi:	db 0			; VBIs not yet used by the player
-mus_wait:	db 0			; 1: at an FFh (or the end) with no VBI, the interrupt skips the player
+mus_st:		db 0			; D7: pairs to write (else waiting at an FFh), D0-D6: calls to the next tick
+mus_pend:	db 0			; ticks due and not yet started
+mus_lead:	db 0			; ticks started minus VBIs of the video (signed)
+mus_frac:	db 0			; fraction of the countdown
+mus_step:	dw 0			; calls per tick, 8.8
+; calls per tick by the lead -3..10: 21.70 * 256 / speed; speeds 1.06 1.04 1.02 1.005 0.995 0.96 0.92 0.88 0.85
+; 0.82 0.79 0.76 0.73 0.70 (gently near the video, harder when it is far behind)
+mus_rate:	dw 5241, 5342, 5446, 5528, 5583, 5787, 6038, 6313, 6536, 6775, 7032, 7310, 7610, 7936
 mus_zrd:	dw 0			; A8-A21 of the next page on the RAM disk
 mus_left:	dw 0			; pages still to load

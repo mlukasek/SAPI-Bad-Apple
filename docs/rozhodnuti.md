@@ -36,8 +36,8 @@ ffmpegem (plošný průměr) a s prahem 50 %. Skripty: `tools/vlab.py`, `tools/v
 **Stopy** ([format.md](format.md)):
 - Svislé řetězy intervalů s jedním bajtem na řádek.
 - Pro každý kód je vygenerovaná obsluha bez tabulek: řádek v jednom bajtu stojí 81 T, ve dvou 112 T.
-- Celé video: **2,94 MB, 6349 z 6564 snímků včas (96,7 %)**. Medián 52 k T, 90. percentil 114 k T na snímek.
-  Nejhorší snímek trvá 6 VBI.
+- Celé video (první model přerušení): 2,94 MB, 6349 z 6564 snímků včas (96,7 %). Medián 52 k T, 90. percentil
+  114 k T na snímek. Nejhorší snímek trvá 6 VBI. S přesnějším modelem přerušení viz Hudba.
 - Kodér počítá cykly; model Z80 (`tools/vtest.py`) ukázal shodu ±23 T na snímek a obraz po bajtech
   stejný jako reference.
 - **Mrtvá zóna 1 bod:** odstraní 26 % intervalů a chyba hrany je nejvýš 1 bod.
@@ -45,28 +45,51 @@ ffmpegem (plošný průměr) a s prahem 50 %. Skripty: `tools/vlab.py`, `tools/v
 
 ## Hudba (2026-10-09)
 
-- **Zdroj:** MIDI přepis verze Alstroemeria Records feat. nomico z
-  [Handhule90/badapple-midi](https://github.com/Handhule90/badapple-midi):
-  - 138 BPM, 214,8 s;
-  - stopy: bicí, sub basa, 2 syntezátory, zpěv, kytara, arpeggio, 2 basy;
-  - jen lokálně v `orig/midi/handhule90-full.mid`, necommituje se.
-- **Zamítnuté přepisy:** přepisy z [cnlohr/badderapple](https://github.com/cnlohr/badderapple) (MIT) mají
-  jen dvojhlas melodie a basy a pár bubnů. Remix s amen breakem z FlashlightET/BadCanvas není originál.
-- **Synchronizace** (`tools/msync.py`):
-  - Nástupy not MIDI se korelují se zvukem AVI (obálka nástupů, kopáky v basovém pásmu, hi-haty nad 5 kHz).
-  - **Čas 0 MIDI je 1,39 s zvuku videa.** Tempo sedí na 138 BPM bez měřítka, posun je stejný ve všech úsecích
-    po 8 taktech; odchylky jsou jen o celou dobu, a to je alias.
-  - Zvuk videa začíná v 1,375 s.
-- **Proud zápisů do registrů místo vlastního přehrávače not:**
-  - aranžmá a stínování registrů dělá Python, Z80 jen zapisuje dvojice;
-  - 50,8 KB, průměrně 1,45 zápisu na tik, nejvýš 21.
-- **Jeden zápis na přerušení (1300,7 Hz) místo dávky ve VBI:**
-  - na čip se nečeká (dávka 21 zápisů by stála 2,5 k T s čekáním);
-  - nejhorší zpoždění zápisu je 0,97 tiku.
-- **Přerušení zůstává časovač 82C54, ne VBI z CGA-1V:**
-  - klávesnice Consul bez latche dává jen 1 ms impuls STROBE, takže se musí vzorkovat ≥ 1 kHz;
-  - cena: nečinné volání 160 T, tedy asi 4,1 k T z každého VBI. Kodér s tím počítá (`ISR_T_PER_VBI`).
-- **Kontrola v SAPIemu** (`tools/emu/run_demo.py --to-end --wav`):
-  - Přehrávač po celou dobu stíhal (`mus_vbi` = 0).
-  - Nahrávka: `build/badapple_opl.wav`, stereo s originálem `build/sync.wav` (originál vlevo, náš vpravo),
-    `build/preview_opl.mp4` (původní video s naší hudbou).
+**Vlastní aranžmá místo převzatého MIDI.** První verze hrála MIDI přepis z
+[Handhule90/badapple-midi](https://github.com/Handhule90/badapple-midi). Autor ji zamítl: aranž byla zvláštní
+a cizí, demo má být vlastní tvorba. Teď je aranžmá vlastní, psané pro OPL2 (`music/badapple.py`).
+MIDI soubory zůstaly jen lokálně v `orig/midi/` a nic je nepoužívá.
+
+**Přepis ze zvuku videa** (`tools/transcribe.py`, `tools/audio.py`; FFT a harmonická salience jen ve
+standardní knihovně):
+- Mřížka: 138 BPM, takt 0 v 1,39 s zvuku videa (ověřeno nástupy kopáků a hi-hatů).
+- Stavba (podobnost chromy po taktech): intro 0–7, riff 8–15, sloka 16–31, refrén 32–47, tichý refrén 48–63,
+  riff 64–71, sloka 72–87, refrén 88–103, **refrén o půltón výš (e moll)** 104–119, dohra 120–124.
+- Melodie zpěvu ze středu sterea (M − 1,2·|S| ve spektru), zprůměrovaná přes všechna opakování téhož místa
+  a dohledaná Viterbiho průchodem; sloka i refrén sedí na známou melodii.
+- Akordy z bělené chromy a basy po půltaktech: sloka D#m – D#m – Bmaj7 – C# Dm, refrén Bmaj7 – C#sus2 –
+  D#m – D#m, v riffu D#m s G#7 a F#sus2, konce refrénu bas G# → G.
+- Kontrola výsledku (`work/compare.py`, nahrávka z SAPIemu proti originálu): podobnost chromy po taktech
+  většinou 0,6–0,98 a tónina sedí. Slabší jsou jen takty, kde melodie drží tón přes akord.
+
+**Aranžmá** ([format.md](format.md)):
+- 6 melodických kanálů a rytmický režim: hlas, basa, ozvěna nebo druhý hlas, dva hlasy akordů, arpeggio
+  nebo zvonky.
+- Vlastní intro (zvonky s ozvěnou nad sílící plochou, nástup kopáku a basy s otevíráním „filtru“ modulátorem,
+  vír virblu) a vlastní riff (rytmizovaný saw 3-3-2 a zvonkový motiv).
+- Tichý refrén zpívá zvonek, pak se vrátí hlas a vše graduje. Závěr v e moll vrací zvonky z intra.
+- Zvonek má poměr operátorů 3:1. Původní 3,5:1 dával do d moll cizí tóny C a D (ukázala to chroma).
+
+**Synchronizace hudby s obrazem:**
+- Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule
+  zpomalí ([format.md](format.md), tabulka `mus_rate`).
+- Snímky po opožděném drží odstup od skutečného přepnutí, takže video zpomalí a nedohání skoky.
+- **Zkouška v SAPIemu** (`work/slowtest.py`): 10 s uprostřed dema s CPU na 2 MHz (TURBO vypnuté). Video
+  běží na ~73 %, hudba zpomalí s ním, náskok hudby je nejvýš 13 tiků (0,2 s), většinou 3–9. Po návratu na
+  4 MHz se do 2 s vrátí na 1 tik.
+- Při běžném běhu je náskok celou dobu 1 tik a pozdní je jen první snímek.
+
+**Přerušení a čas pro video:**
+- Přerušení zůstává časovač 82C54, ne VBI z CGA-1V: klávesnice Consul bez latche dává jen 1 ms impuls STROBE.
+- Nečinné volání stojí 183 T (odpočet tiku), zápis do YM 168 T navíc.
+- Kodér videa bere čas přerušení pro každý VBI z proudu hudby (nejvíc z VBI a sousedů).
+- Video: **2,97 MB, 6438 z 6564 snímků (98,1 %)**, 2 VBI 6209 snímků, 3 VBI 186, 4 VBI 37, 5 VBI 6.
+
+**Nahrávání v SAPIemu 0.3.0:** dlouhá volání `run_for` (desítky sekund) ztrácejí zvuk (v nahrávce jsou
+úseky digitálního ticha). `run_demo.py` proto při nahrávání běží po 1 s.
+
+**Soubory k poslechu** (`tools/emu/run_demo.py --to-end --wav W`, pak `tools/emu/mkpreview.py W`):
+- `build/preview_opl.mp4`: původní video s naší hudbou;
+- `build/badapple_opl.wav`: jen naše hudba;
+- `build/sync.wav`: originál vlevo, naše hudba vpravo;
+- `build/badapple.vgm`: pro přehrávač VGM.

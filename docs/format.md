@@ -81,37 +81,65 @@ Pro každý snímek:
 
 **Proud** (`build/music.bin`) jsou zápisy do registrů YM3812:
 - dvojice (registr, hodnota);
-- **FFh** = počkat na další VBI (jeden tik 59,94 Hz);
+- **FFh** = další tik (jmenovitě jeden VBI, 59,94 Hz);
 - **FEh** = konec.
 
 Dvojice před prvním FFh jsou nastavení nástrojů. `mus_init` je zapíše při startu s čekáním, které čip
 potřebuje (3,3 µs po adrese, 23,5 µs po datech).
 
-**Přehrávání:**
+**Přehrávání** (`sapi/music.asm`, přerušení v `sapi/badapple.asm`):
 - Přerušení (82C54, 1300,7 Hz) zapíše při každém volání **nejvýš jednu dvojici**. Zápisy jsou od sebe
   aspoň 770 µs, takže na čip se nečeká.
-- Každé VBI pustí přehrávač za jedno FFh. První VBI hraje tik 0, stejně jako se při něm zobrazí snímek 0.
-- V nejvytíženějším tiku je 21 zápisů. Zápis se tak opozdí nejvýš o 0,97 tiku (simulace v `mkmusic.py`).
-- Když není co zapsat, nastaví se `mus_wait` a přehrávač stojí přerušení jen 29 T.
+- **Tiky odpočítává přerušení:** `mus_step` volání na tik (8.8 bitů), jmenovitě 21,70. Bajt `mus_st` nese
+  odpočet (D0–D6) a příznak „jsou dvojice k zápisu“ (D7). Když není co dělat, stojí hudba přerušení 47 T.
+- Tik, který přijde uprostřed dávky zápisů, se jen započítá (`mus_pend`) a přehrávač za FFh pokračuje hned.
+- Simulace v `mkmusic.py`: v nejvytíženějším tiku je 26 zápisů, zápis se opozdí nejvýš o 1,2 tiku.
+  Zápisy bicích jdou v tiku první.
+
+**Synchronizace s obrazem:**
+- **Hodiny videa:** každý VBI je posune o jeden, ale ne tehdy, když už měl být ukázán další snímek a ještě
+  není hotový (`pend`, `next_flip`). Opožděný snímek se ukáže hned, jak je hotový, a další snímky drží
+  odstup od skutečného přepnutí (`flip_at`), takže video se při zdržení zpomalí a nedohání.
+- **`mus_lead`** = odehrané tiky minus kroky hodin videa. V každém VBI podle něj přerušení vybere rychlost
+  hudby z tabulky `mus_rate`:
+
+  | `mus_lead` | ≤ −3 | −2 | −1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | ≥ 10 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | rychlost | 1,06 | 1,04 | 1,02 | 1,005 | 0,995 | 0,96 | 0,92 | 0,88 | 0,85 | 0,82 | 0,79 | 0,76 | 0,73 | 0,70 |
+
+- Když obraz stíhá, drží se hudba VBI na ±0,5 % (v SAPIemu je `mus_lead` celou dobu 1). Opožděný snímek
+  zastaví hodiny videa a hudba plynule zpomalí: o pár procent, když se obraz zdrží jen občas, nejvýš
+  o 30 %, když je pozadu hodně. Výška tónů se nemění, jen tempo.
 
 **Kruhový buffer:**
 - 1 KB na 3800h–3BFFh (4 stránky); ukazatel se zalamuje přes `RES 2,H`.
 - Stránku, kterou přerušení opustilo, doplní hlavní smyčka (`mus_fill`) z RAM disku.
 - Přerušení na porty ZRD-1V nikdy nesahá, adresu RAM disku nastavuje jen hlavní smyčka.
 
-**Aranžmá** (`tools/mkmusic.py`, nástroje `tools/opl_patches.py`): rytmický režim OPL2 a 6 melodických hlasů.
+**Čas v přerušení a video:** kodér videa (`tools/vcodec.py`) bere čas přerušení pro každý VBI zvlášť z proudu
+hudby: 4550 T základ (21,7 nečinných volání po 183 T, VBI, tik) a 168 T za každý zápis. Proto se video
+kóduje až po hudbě (`build.cmd video`).
 
-| Kanál | Part (stopa MIDI) |
+**Aranžmá** (`music/badapple.py`, nástroje `tools/opl_patches.py`, přehrávač not `tools/mkmusic.py`): vlastní,
+pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou přepsané ze zvuku videa
+(`tools/transcribe.py`, [rozhodnuti.md](rozhodnuti.md)).
+
+| Kanál | Part |
 |---|---|
-| 0 | zpěv (horní tón) |
-| 1 | basa (spodní tón stopy Bass; sub basa, Synth2 a Bass2 hrají totéž v oktávách) |
-| 2 | Synth1 (čtvercový lead) |
-| 3 | arpeggio |
-| 4, 5 | kytara (dva spodní tóny akordu) |
-| 6–8 | bicí: BD (35, 36), SD (38–40), HH (42, 69, 82; 46 otevřený), TOM (bonga, kongy), CYM (49) |
+| 0 | hlas (melodie zpěvu), v riffu a tichém refrénu zvonek |
+| 1 | basa: osminy v oktávách, v tichých místech sub basa |
+| 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií (nejbližší tón akordu) |
+| 3, 4 | dva hlasy akordu: plocha (pad), údery na dobu (stab), rytmizovaný saw v riffu (gate) |
+| 5 | arpeggio (pluck), zvonky v intru a v závěru |
+| 6–8 | bicí: BD s klesající výškou, SD (na 2 a 4 se HH jako tlesknutí), HH zavřený i otevřený, TOM, CYM |
 
-**Hlasitost a noty:**
-- Hlasitost noty určuje úroveň nosiče podle velocity (polovina z 40·log10(127/v) dB) a útlumu partu.
-- Nota, která navazuje na předchozí, ji v témže tiku vypne a znovu zapne. Mezi oběma zápisy je
-  aspoň jedno přerušení, takže obálka se spustí znovu.
-- Bicí se zapínají bitem v registru BDh a další tik se bit nuluje.
+**Přehrávač not** (`tools/mkmusic.py`):
+- Krok je šestnáctina (138 BPM), takt 0 začíná 1,39 s po prvním VBI. Tik = zaokrouhlený čas × 59,94.
+- Úroveň nosiče = nástroj + útlum noty + automatizace kanálu (`level`); úroveň modulátoru = nástroj +
+  automatizace `bright` (tmavší/jasnější zvuk, „filtr“).
+- **Vibrato až po chvíli:** bit VIB se nastaví po `vib` krocích noty a s další notou se vrátí.
+- Legato bez nového náběhu (`legato`, `glide` = sklouznutí výšky po tikách).
+- Nota, po které hned následuje další, se vypne o tik dřív, aby v tiku náběhů nebyly i vypínací zápisy.
+- Změna nástroje se zapíše až 24 tiků předem, když kanál nehraje.
+- Kopák: kanál 6 začíná o 12, 6 a 2 půltóny výš a vrací se na B1 (`BD_SWEEP`).
+- Bicí se zapínají bitem v registru BDh; nový úder téhož nástroje bit nejdřív vynuluje.
