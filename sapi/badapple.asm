@@ -10,7 +10,7 @@
 ;  - ZRD-1V RAM disk: BADAPPLE.DAT from block 8 (10000h), read through
 ;    the ports into a ring buffer of 32 KB;
 ;  - MPH-1V: 82C54 counter 2 gives the interrupt (1300.7 Hz, IM 1),
-;    YM3812 the music;
+;    YM3812 the music (music.asm, one register write per interrupt);
 ;  - keyboard on JPR-1V: STROBE on port 01h D0 (a pulse of 1 ms, so the
 ;    interrupt polls it), any key ends the demo.
 ; =====================================================================
@@ -75,6 +75,7 @@ start:
 	out (MAPREG),a
 	call dat_open
 	jp nz,no_dat
+	call mus_init			; the instruments; the first notes wait for the first VBI
 	ld a,CFG_CGA+002h		; clear page B, then A
 	ld (CGA_CFG),a
 	call cga_clear
@@ -109,6 +110,7 @@ frame_loop:
 	ld a,(key_hit)
 	or a
 	jp nz,exit
+	call mus_fill
 	call ring_ahead			; at least AHEAD_PAGES loaded (or the end of the stream)
 	ld bc,(ring_r)
 	ld a,(bc)			; header: VBIs after the previous frame
@@ -154,12 +156,16 @@ frame_done:				; (symbol for the tests: frame drawn, waiting for the flip)
 	ld a,(key_hit)
 	or a
 	jp nz,exit
+	call mus_fill
 	call ring_fill1			; read ahead meanwhile
 	jr .fl_wait
 
 video_end:
 	ld b,120			; 2 s of the last picture
-.ve_w:	call vbi_count_wait
+.ve_w:	push bc
+	call mus_fill
+	pop bc
+	call vbi_count_wait
 	djnz .ve_w
 
 ; ---- back to CP/M: interrupt off, page 0 back, CGA-1V unmapped, warm boot
@@ -170,6 +176,7 @@ exit:
 	out (MIEN),a
 	ld a,0C0h
 	out (MIACK),a
+	call mus_silence
 	ld a,080h			; acknowledge VBI, page A, EGA mode
 	ld (CGA_CFG),a
 	ld hl,page0_save
@@ -197,7 +204,7 @@ msg_nodat:
 ; Interrupt (RST 38h, 82C54 counter 2, 1300.7 Hz)
 ; Polls the keyboard STROBE and the VBI of CGA-1V. At a VBI: acknowledge
 ; it (the only writer of CONFIG), count it, flip the pages when a frame
-; is ready and its time has come.
+; is ready and its time has come. Then one write of the music stream.
 ; =====================================================================
 isr:
 	push af
@@ -218,6 +225,10 @@ isr:
 	ld a,(cfg)
 	or 080h
 	ld (CGA_CFG),a
+	ld hl,mus_vbi
+	inc (hl)
+	xor a
+	ld (mus_wait),a			; the player may go on
 	ld hl,(vbi_cnt)
 	inc hl
 	ld (vbi_cnt),hl
@@ -240,6 +251,41 @@ isr:
 .is_vend:
 	pop hl
 .is_done:
+	ld a,(mus_wait)			; music: one pair, or past an FFh when a VBI came
+	or a
+	jr nz,.is_end			; (29 T when there is nothing to do)
+	push hl
+	ld hl,(mus_r)
+	ld a,(hl)
+	cp MUS_END
+	jr c,.is_mw
+	jr z,.is_mi			; end of the music
+	ld a,(mus_vbi)			; FFh: wait for a VBI
+	or a
+	jr z,.is_mi
+	dec a
+	ld (mus_vbi),a
+	inc hl
+	res 2,h				; ring 3800h-3BFFh
+	ld a,(hl)
+	cp MUS_END
+	jr nc,.is_ms			; the next tick (or the end) right away: nothing to write
+.is_mw:	out (YM_ADDR),a
+	inc hl
+	res 2,h
+	ld a,(hl)
+	out (YM_DATA),a			; 25 T after the address (3.3 us needed)
+	inc hl
+	res 2,h
+.is_ms:	ld (mus_r),hl
+	pop hl
+.is_end:
+	pop af
+	ei
+	reti
+.is_mi:	ld a,1				; nothing until the next VBI
+	ld (mus_wait),a
+	pop hl
 	pop af
 	ei
 	reti
@@ -296,7 +342,8 @@ pal_rgb:					; entries 0-17 (only 0, 1, 16, 17 are seen)
 
 ; =====================================================================
 ; BADAPPLE.DAT on the RAM disk (tools/mkdat.py): header at 10000h
-;   0: 'BADAPPL1'  8: video offset (3 B), 11: video length (3 B)
+;   0: 'BADAPPL1'  8: video offset (3 B), 11: video length (3 B),
+;  14: music offset (3 B), 17: music length (3 B)
 ; The video is read in pages of 256 B into the ring buffer; a frame never
 ; crosses the end of the ring (the encoder pads with FFh).
 ; =====================================================================
@@ -309,7 +356,7 @@ dat_open:
 	out (ZRD_A8),a
 	out (ZRD_A0),a
 	ld hl,dat_hdr
-	ld bc,14*256+ZRD_DATA
+	ld bc,20*256+ZRD_DATA
 	inir
 	ld hl,dat_hdr
 	ld de,dat_magic
@@ -383,25 +430,11 @@ ring_page:
 	dec hl
 	ld (pages_left),hl
 	ld hl,(zrd_page)
-	ld a,h
-	or MAP_CGA
-	out (MAPREG),a
-	ld a,l
-	out (ZRD_A8),a
-	xor a
-	out (ZRD_A0),a
-	inc hl
-	ld (zrd_page),hl
 	ld a,(ring_w)
-	ld h,a
-	ld l,0
-	ld bc,0*256+ZRD_DATA		; B = 0: 256 bytes
-.rp:	rept 16
-	ini
-	endm
-	jr nz,.rp
-	ld a,h				; INI moved HL to the next page
-
+	ld d,a
+	call zrd_read
+	ld (zrd_page),hl
+	ld a,d
 	cp HIGH RING_END
 	jr nz,.rp_w
 	ld a,HIGH RING
@@ -409,7 +442,31 @@ ring_page:
 	or 1				; NZ
 	ret
 
+; ---- zrd_read: 256 B from the RAM disk page HL (A8-A21) to the RAM page D.
+;   out: HL + 1, D + 1; AF, BC destroyed
+zrd_read:
+	ld a,h
+	or MAP_CGA			; keep CGA-1V mapped (MAPREG shares the port)
+	out (MAPREG),a
+	ld a,l
+	out (ZRD_A8),a
+	xor a
+	out (ZRD_A0),a
+	inc hl
+	push hl
+	ld h,d
+	ld l,0
+	ld bc,0*256+ZRD_DATA		; B = 0: 256 bytes
+.zr:	rept 16
+	ini
+	endm
+	jr nz,.zr
+	ld d,h				; INI moved HL to the next page
+	pop hl
+	ret
+
 	include "video.asm"
+	include "music.asm"
 
 ; ---- variables
 page0_save:	ds 3
@@ -421,7 +478,7 @@ flip_at:	dw 0			; VBI of the flip of the last frame
 next_flip:	dw 0
 frame_cnt:	dw 0			; frames drawn
 late_cnt:	dw 0			; frames that were not ready at their VBI
-dat_hdr:	ds 14
+dat_hdr:	ds 20
 zrd_page:	dw 0			; A8-A21 of the next page to read
 pages_left:	dw 0
 ring_r:		dw 0			; read pointer (start of the next frame)

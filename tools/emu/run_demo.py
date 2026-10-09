@@ -32,7 +32,10 @@ def word(addr):
 
 
 def counters(sym):
-    return {k: word(sym[k]) for k in ('frame_cnt', 'late_cnt', 'vbi_cnt')}
+    c = {k: word(sym[k]) for k in ('frame_cnt', 'late_cnt', 'vbi_cnt')}
+    if 'mus_vbi' in sym:
+        c['mus_vbi'] = read(sym['mus_vbi'], 1)[0]          # VBIs the music player is behind
+    return c
 
 
 def screenshot(path):
@@ -59,7 +62,7 @@ def main():
     sm.call('type_text', text='BADAPPLE\r')
     sm.call('run_for', ms=300)
     if a.wav:
-        sm.call('audio_record', file=os.path.abspath(a.wav), start=True)
+        sm.call('audio_record', start=True)
     t = 0.3
     for at in [float(x) for x in a.at.split(',') if x]:
         sm.call('run_for', ms=int((at - t) * 1000))
@@ -76,6 +79,8 @@ def main():
                 break
         print('end:', counters(sym), r)
     sm.call('pause')
+    if a.wav:
+        print('audio:', sm.call('audio_record', file=os.path.abspath(a.wav)))
 
 
 if __name__ == '__main__':

@@ -42,3 +42,31 @@ ffmpegem (plošný průměr) a s prahem 50 %. Skripty: `tools/vlab.py`, `tools/v
   stejný jako reference.
 - **Mrtvá zóna 1 bod:** odstraní 26 % intervalů a chyba hrany je nejvýš 1 bod.
 - **Inverze paletou nepomohla:** střihy v Bad Apple nejsou prosté inverze.
+
+## Hudba (2026-10-09)
+
+- **Zdroj:** MIDI přepis verze Alstroemeria Records feat. nomico z
+  [Handhule90/badapple-midi](https://github.com/Handhule90/badapple-midi):
+  - 138 BPM, 214,8 s;
+  - stopy: bicí, sub basa, 2 syntezátory, zpěv, kytara, arpeggio, 2 basy;
+  - jen lokálně v `orig/midi/handhule90-full.mid`, necommituje se.
+- **Zamítnuté přepisy:** přepisy z [cnlohr/badderapple](https://github.com/cnlohr/badderapple) (MIT) mají
+  jen dvojhlas melodie a basy a pár bubnů. Remix s amen breakem z FlashlightET/BadCanvas není originál.
+- **Synchronizace** (`tools/msync.py`):
+  - Nástupy not MIDI se korelují se zvukem AVI (obálka nástupů, kopáky v basovém pásmu, hi-haty nad 5 kHz).
+  - **Čas 0 MIDI je 1,39 s zvuku videa.** Tempo sedí na 138 BPM bez měřítka, posun je stejný ve všech úsecích
+    po 8 taktech; odchylky jsou jen o celou dobu, a to je alias.
+  - Zvuk videa začíná v 1,375 s.
+- **Proud zápisů do registrů místo vlastního přehrávače not:**
+  - aranžmá a stínování registrů dělá Python, Z80 jen zapisuje dvojice;
+  - 50,8 KB, průměrně 1,45 zápisu na tik, nejvýš 21.
+- **Jeden zápis na přerušení (1300,7 Hz) místo dávky ve VBI:**
+  - na čip se nečeká (dávka 21 zápisů by stála 2,5 k T s čekáním);
+  - nejhorší zpoždění zápisu je 0,97 tiku.
+- **Přerušení zůstává časovač 82C54, ne VBI z CGA-1V:**
+  - klávesnice Consul bez latche dává jen 1 ms impuls STROBE, takže se musí vzorkovat ≥ 1 kHz;
+  - cena: nečinné volání 160 T, tedy asi 4,1 k T z každého VBI. Kodér s tím počítá (`ISR_T_PER_VBI`).
+- **Kontrola v SAPIemu** (`tools/emu/run_demo.py --to-end --wav`):
+  - Přehrávač po celou dobu stíhal (`mus_vbi` = 0).
+  - Nahrávka: `build/badapple_opl.wav`, stereo s originálem `build/sync.wav` (originál vlevo, náš vpravo),
+    `build/preview_opl.mp4` (původní video s naší hudbou).

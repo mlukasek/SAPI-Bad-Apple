@@ -35,7 +35,10 @@ PAGE = 0x4000
 # cycle model: T at 4 MHz incl. the waits of CGA-1V measured on the real HW (per access)
 CGA_R, CGA_W = 1.26, 2.43
 VBI_T = 66_733                # 4 MHz / 59.94 Hz
-OVERHEAD_T = 6_000            # per frame: interrupts (music, flip), main loop, frame start
+# The interrupt (sapi/badapple.asm isr, 1300.7 Hz) takes from every VBI: 21.7 calls of 160 T with nothing to do,
+# the VBI itself (~220 T) and the music (~340 T on average: the FFh, 131 T per register write).
+ISR_T_PER_VBI = 4_100
+FRAME_T = 4_000               # per frame: main loop, frame start, the flip seen up to one interrupt late
 T_READ = 16                   # reading the stream from the RAM disk, per byte (unrolled INI)
 MX_MID_T = 37                 # each further middle byte of an MX row
 
@@ -284,6 +287,11 @@ def frame_body(page_rows, new_rows, use_clr=True):
     return out, cyc + len(out) * T_READ
 
 
+def vbis_needed(cyc):
+    """VBIs a frame of cyc T of the decoder takes (at least 2: 29.97 fps)."""
+    return max(2, int(-(-(cyc + FRAME_T) // (VBI_T - ISR_T_PER_VBI))))
+
+
 def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
     n_src, data = frames.load(W, H)
     t_end = (frames.SRC_FRAMES * 1001 // 1000) * 2      # VBIs of the whole video
@@ -304,7 +312,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
         for z in range(dz, dz_max + 1):
             new = [shown[y] ^ deadzone(shown[y] ^ img[y], z, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
-            need = int(-(-(cyc + OVERHEAD_T) // VBI_T))
+            need = vbis_needed(cyc)
             if need <= 2:
                 break
         if need > 2:
@@ -314,7 +322,7 @@ def encode(n_frames=None, dz=1, dz_max=3, check=False, verbose=True):
             img = rows_of(data, src)
             new = [shown[y] ^ deadzone(shown[y] ^ img[y], dz_max, img[y]) for y in range(H)]
             body, cyc = frame_body(page, new)
-            need = int(-(-(cyc + OVERHEAD_T) // VBI_T))
+            need = vbis_needed(cyc)
             target = max(target, flip + need)
         if check:
             v = vram[n & 1]

@@ -22,8 +22,10 @@ def main():
         errors.append(f'program up to {s["PROGRAM_END"]:04X}h, over the decoder handlers (1000h)')
     if s['VDEC_TOP'] > s['vfill']:
         errors.append(f'decoder handlers up to {s["VDEC_TOP"]:04X}h, into vfill ({s["vfill"]:04X}h)')
-    if s['vfill_end'] > s['STACK_TOP'] - 0x100:
-        errors.append(f'vfill up to {s["vfill_end"]:04X}h, into the stack')
+    if s['vfill_end'] > s['MUS_RING']:
+        errors.append(f'vfill up to {s["vfill_end"]:04X}h, into the music ring ({s["MUS_RING"]:04X}h)')
+    if s['MUS_RING_END'] > s['STACK_TOP'] - 0x100:
+        errors.append(f'music ring up to {s["MUS_RING_END"]:04X}h, into the stack')
     if errors:
         sys.exit('\n'.join(errors))
     print(f'layout ok: program to {s["PROGRAM_END"]:04X}h, handlers to {s["VDEC_TOP"]:04X}h')
