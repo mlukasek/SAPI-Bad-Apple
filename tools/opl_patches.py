@@ -76,12 +76,18 @@ NZ_SNARE = noise('nz_snare', 5)      # the reverb of the snare
 NZ_CRASH = noise('nz_crash', 4)      # the tail of the crash
 NOISE_KEY = 72                       # the key of the noise notes (C5): any key is noise
 
+# the body of the snare (the original's snare has 15-20 dB more in 80-250 Hz than the noise of the rhythm SD):
+# a dropping sine, it dies by itself (-9 dB in 0.1 s; work/lab_body.py); harmonics put too much into 250-500 Hz
+BODY = patch('body', op(mult=1, tl=34, ar=15, dr=6, sl=15, rr=6, egt=0),
+             op(mult=1, tl=0, ar=15, dr=6, sl=15, rr=6, egt=0), fb=2)
+
 # rhythm mode: one operator each (BD has both)
-# kick: a little click, a deep body that holds and is cut off after ~280 ms (tools/mkmusic.py BD_GATE), measured in
-# the intro of the original
-# (4 dB softer than the short kick before: the held body has more energy)
-BD = patch('bd', op(mult=0, tl=14, ar=15, dr=8, sl=4, rr=12, egt=0),
-           op(mult=1, tl=5, ar=15, dr=5, sl=2, rr=11, egt=1), fb=3)
+# kick: a sine (the modulator is silent: its click put 200-500 Hz into the attack, 5-8 dB over the original's);
+# the punch comes from the pitch sweep (tools/mkmusic.py BD_SWEEP); the deep body holds and is cut off after
+# ~280 ms (BD_GATE), measured in the intro of the original. 4 dB softer than the short kick before: the held
+# body has more energy.
+BD = patch('bd', op(mult=0, tl=63, ar=15, dr=8, sl=4, rr=12, egt=0),
+           op(mult=1, tl=5, ar=15, dr=5, sl=2, rr=11, egt=1), fb=0)
 # With channels 7 and 8 at 4.5 and 1.2 kHz (tools/mkmusic.py RHYTHM_HZ) SD and HH are noise; HH mult 15 also brightens SD.
 SD = op(mult=1, tl=0, ar=15, dr=8, sl=15, rr=9, egt=0)
 HH = op(mult=15, tl=0, ar=15, dr=9, sl=15, rr=5, egt=0)      # closed hat; OH and CR differ only in DR, RR: two writes

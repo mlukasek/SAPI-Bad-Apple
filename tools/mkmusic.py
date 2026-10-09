@@ -53,7 +53,8 @@ RHYTHM_KEYS = {6: 34}                   # BD A#1 like the kick of the original, 
 # peak under 4.9 kHz in HH and SD (at 6 kHz / 6 kHz the hat had one at 1.7-2 kHz). TOM changes ch 8 for its
 # pitch; the next hit of the other drums puts it back.
 RHYTHM_HZ = {7: 4500.0, 8: 1200.0}
-BD_SWEEP = (40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
+BD_SWEEP = (49, 45, 40, 36)     # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]: the punch of the
+                                # original's kick is at 100-125 Hz in its first 50 ms (work/kickspec.py, lab_kick2.py)
 BD_GATE = 17                    # ticks: the kick holds (sustain) and is cut off after ~280 ms like the original
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free
 

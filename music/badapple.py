@@ -205,13 +205,26 @@ class Parts:
 
     def tails(self, s0, s1, spec):
         """Noise tails of the drums hit in steps s0..s1 (the reverb and the wash of the original):
-        spec {instrument: (channels, patch, att over the hit)}; a tail lasts until the next one on its channel and ends
+        spec {instrument: (channels, patch, att over the hit, softest att)}; the tail follows soft hits but not the
+        accents (they come with the kick: its noise would cover it); a tail lasts until the next one on its channel and ends
         two steps before s1 (the channel is free to switch its instrument)."""
         for step, inst, att, key in sorted(h for h in self.s.hits if s0 <= h[0] < s1):
             if inst in spec:
-                chans, patch, extra = spec[inst]
+                chans, patch, extra, loudest = spec[inst]
                 for ch in chans:
-                    self.s.note(ch, step, min(16, s1 - 2 - step), P.NOISE_KEY, att + extra - MIX[ch], patch)
+                    self.s.note(ch, step, min(16, s1 - 2 - step), P.NOISE_KEY, max(att + extra, loudest) - MIX[ch],
+                                patch)
+
+    def snare_body(self, s0, s1, chans, att):
+        """The body of each snare hit in steps s0..s1 on melodic channels: a note sliding down SNARE_BODY (on two
+        channels a little apart: louder and wider)."""
+        hi, lo, glide = SNARE_BODY
+        for step, inst, hatt, key in sorted(h for h in self.s.hits if s0 <= h[0] < s1 and h[1] == 'SD'):
+            ln = min(2, s1 - step)
+            for i, ch in enumerate(chans):
+                a, d = hatt + att - MIX[ch], 0.15 * i
+                self.s.note(ch, step, 0.2, hi + d, a, P.BODY)
+                self.s.note(ch, step + 0.2, ln - 0.2, lo + d, a, P.BODY, legato=True, glide=glide)
 
     def drums(self, b0, n, pattern):
         """pattern: {instrument: (16 chars, att)}; x = hit, X = accent (-3 dB), o = soft (+5 dB)."""
@@ -246,8 +259,11 @@ RIFF_SUB = 2.0                                  # dB of the deep bass (a sine on
 # The original (work/introdecay.py): the snare falls 12 dB in 55 ms and then rings out (-24 dB at 0.2 s): its
 # tail starts ~12 dB under it; the hats fade like a burst of noise (-9 dB at 70 ms, -24 dB at 180 ms) where the
 # rhythm HH is gone in 25 ms: their tail is ~3 dB under them and masks their tonal peaks.
-INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 14.0), 'HH': ((4,), P.NZ_HAT, 8.0), 'OH': ((4,), P.NZ_HAT, 6.0),
-               'CR': ((5,), P.NZ_CRASH, -5.0)}
+# The author found the first version too noisy at the kick: the tails are 3 dB softer and the accents of the
+# hats (on the beats, with the kick) do not raise them.
+INTRO_TAILS = {'SD': ((3,), P.NZ_SNARE, 17.0, 0.0), 'HH': ((4,), P.NZ_HAT, 11.0, 22.0),
+               'OH': ((4,), P.NZ_HAT, 9.0, 0.0), 'CR': ((5,), P.NZ_CRASH, -2.0, 0.0)}
+SNARE_BODY = (55, 38, 9)                        # the body of the snare slides G3 -> D2 in 9 ticks
 SHAKER = 'o.x.o.x.o.x.o.x.'                  # soft hats for air in the parts without the beat
 
 
@@ -270,6 +286,7 @@ def arrange(song):
     # the drums of the original ring out (reverb, a wash of the hats between the hits): noise tails on the free
     # melodic channels
     p.tails(0, 16 * 8, INTRO_TAILS)
+    p.snare_body(0, 16 * 8 - 2, (0, 1), 0.0)
 
     def riff(b0):
         # the riff of the original: a driving 16th line of distorted basses (D#2 D#2 D#2 D#3 D#3 D#3 C#3 D#3,
@@ -285,9 +302,10 @@ def arrange(song):
                     s.note(5, 16 * b + i, 1, k, att=acc - MIX[5] + RIFF_SUB, patch=P.DEEP)
                     for ch in (0, 2):
                         s.note(ch, 16 * b + i, 1, k + RIFF_DETUNE[ch], att=acc + RIFF_GTR, patch=P.GRIT)
-        p.chords(b0, 8, P.PAD, 11.0, lo=60, hi=72, skip_bass=False)
+        p.chords(b0, 8, P.PAD, 11.0, chans=(4,), lo=60, hi=72, skip_bass=False)
         p.drums(b0, 7, {'BD': (FOUR, 0), 'SD': (TWO_FOUR, 3), 'HH': (EIGHTS, 9), 'OH': (OFF8, 7)})
         p.drums(b0 + 7, 1, {'BD': (FOUR, 0), 'SD': ('....x...x.x.xxxx', 3), 'HH': (OFF8, 9)})
+        p.snare_body(16 * b0, 16 * (b0 + 8) - 2, (3,), 0.0)
         s.hit(16 * b0, 'CR', 1.0)
 
     def verse(b0, second_voice):

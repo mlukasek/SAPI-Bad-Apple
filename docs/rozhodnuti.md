@@ -153,6 +153,22 @@ nepoznáš. Výsledky:
 - **Výsledek:** obálky všech pásem v intru sedí s originálem. Energie po pásmech v intru a riffu je do ±4 dB,
   ve sloce a refrénu do ±5 dB, nad 4 kHz o 4–6 dB méně.
 
+**Kopák a tělo virblu** (autor: „šumu je už možná hodně, zvlášť u kopáku chybí víc basy“). Pracovní
+`work/kickspec.py` a `hitspec.py` měří třetinooktávy 0–50 ms a 50–200 ms po dobách, laboratoř
+`work/lab_kick2.py` a `lab_body.py`:
+- **Úder kopáku** má v originálu v prvních 50 ms vrchol na 100–125 Hz a nad 160 Hz skoro nic. Náš měl úder níž
+  a v 200–500 Hz o 5–8 dB víc. To byl cvak modulátoru a šum ocasů hi-hatů, které hrají na dobách s kopákem.
+  - Kopák je teď čistý sinus (modulátor ztlumený). Úder dává rychlý sjezd výšky po tikách: E3, C3, G2, D#2,
+    pak A#1 (`BD_SWEEP`).
+  - Ocasy jsou o 3 dB tišší a akcenty hi-hatů na dobách je nezesilují.
+- **Tělo virblu:** na dobách 2 a 4 má originál v 80–250 Hz o 15–20 dB víc než náš šumový virbl, to je ten chybějící
+  „bas“. Melodický kanál k němu teď hraje sinus s mírnou zpětnou vazbou, který sjede z G3 na D2 za 9 tiků
+  (`SNARE_BODY`, nástroj `BODY`). V intru hraje na kanálech 0 a 1 (rozladěné o 15 centů), v riffu na kanálu 3.
+  Plocha v riffu má proto jen jeden hlas.
+  - Čistý sinus měl málo energie v 200–500 Hz (o 10 dB méně než originál), silné harmonické zase příliš
+    (o 10 dB víc). Zpětná vazba 2 a modulátor TL 34 jsou mezi tím.
+- **Výsledek v intru:** pásma 40 Hz–16 kHz do ±3 dB od originálu, jen 630–1200 Hz o 6 dB méně (praskot virblu).
+
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule
   zpomalí ([format.md](format.md), tabulka `mus_rate`).
