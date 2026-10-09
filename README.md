@@ -10,8 +10,8 @@ a 3 MB dat čte za běhu z RAM disku **ZRD-1V** nebo **ZRMD-1**.
 
 | | | |
 |---|---|---|
-| ![Let nad hradem](docs/img/let.png) | ![Křídla](docs/img/kridla.png) | ![Strom](docs/img/strom.png) |
-| ![Jablko](docs/img/jablko.png) | ![Postava s rohy](docs/img/rohy.png) | ![Postava s holí](docs/img/postava.png) |
+| ![Let nad hradem](docs/img/let.png) | ![Křídla](docs/img/kridla.png) | ![Postava s holí](docs/img/postava.png) |
+| ![Dívka s jablkem](docs/img/jablko.png) | ![Tři muzikantky](docs/img/muzikantky.png) | ![Dvě postavičky](docs/img/dvojice.png) |
 
 *Snímky z emulátoru SAPIemu (CGA-1V, 320 × 200, obraz dema uprostřed).*
 
