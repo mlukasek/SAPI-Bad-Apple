@@ -33,25 +33,18 @@ SUB = patch('sub', op(mult=1, tl=34, ar=13, dr=2, sl=4, rr=6, ksl=1),
 # warm saw-like pad, slow attack and release, vibrato
 PAD = patch('pad', op(mult=1, tl=27, ar=5, dr=2, sl=3, rr=5, ksl=1, vib=1),
             op(mult=1, tl=0, ar=5, dr=1, sl=1, rr=5, vib=1), fb=6)
-# electric-piano-like stab of the verses: bright bark, mellow decay
-STAB = patch('stab', op(mult=1, tl=27, ar=15, dr=5, sl=7, rr=7, egt=0, ksl=1),
-             op(mult=1, tl=0, ar=15, dr=4, sl=5, rr=7, egt=0), fb=4)
 # gated saw of the riffs: full sustain, fast release (the notes are cut short)
 GATE = patch('gate', op(mult=1, tl=24, ar=15, dr=1, sl=2, rr=10, ksl=1),
              op(mult=1, tl=0, ar=15, dr=1, sl=1, rr=10), fb=6)
 # trance pluck of the arpeggios
 PLUCK = patch('pluck', op(mult=2, tl=28, ar=15, dr=5, sl=8, rr=7, egt=0, ksl=1),
               op(mult=1, tl=0, ar=15, dr=6, sl=9, rr=7, egt=0), fb=4)
-# bell: modulator 3x the carrier (harmonic: no foreign partials against the key), the carrier an octave up,
-# the brightness dies away faster than the tone
-BELL = patch('bell', op(mult=6, tl=31, ar=15, dr=5, sl=7, rr=5, egt=0),
-             op(mult=2, tl=0, ar=15, dr=3, sl=7, rr=5, egt=0), fb=1, tr=-12)
-
 # rhythm mode: one operator each (BD has both)
-BD = patch('bd', op(mult=0, tl=12, ar=15, dr=8, sl=4, rr=12, egt=0),
-           op(mult=1, tl=0, ar=15, dr=7, sl=15, rr=12, egt=0), fb=3)
+BD = patch('bd', op(mult=0, tl=9, ar=15, dr=8, sl=4, rr=12, egt=0),          # click of the modulator, long body
+           op(mult=1, tl=0, ar=15, dr=6, sl=15, rr=12, egt=0), fb=3)
 SD = op(mult=1, tl=0, ar=15, dr=8, sl=15, rr=9, egt=0)
 HH = op(mult=1, tl=0, ar=15, dr=9, sl=15, rr=7, egt=0)       # HH and OH differ only in DR: one write
 OH = op(mult=1, tl=0, ar=15, dr=7, sl=15, rr=7, egt=0)
 TOM = op(mult=1, tl=0, ar=15, dr=7, sl=15, rr=8, egt=0)
-CYM = op(mult=1, tl=0, ar=15, dr=5, sl=15, rr=6, egt=0)
+CYM = op(mult=1, tl=0, ar=15, dr=5, sl=15, rr=6, egt=0)       # crash; CYM and RD differ only in DR: one write
+RD = op(mult=1, tl=0, ar=15, dr=7, sl=15, rr=6, egt=0)        # ride: the top cymbal, short

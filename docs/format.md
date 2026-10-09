@@ -126,12 +126,12 @@ pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou
 
 | Kanál | Part |
 |---|---|
-| 0 | hlas (melodie zpěvu), v riffu a tichém refrénu zvonek |
-| 1 | basa: osminy v oktávách, v tichých místech sub basa |
-| 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií (nejbližší tón akordu) |
-| 3, 4 | dva hlasy akordu: plocha (pad), údery na dobu (stab), rytmizovaný saw v riffu (gate) |
-| 5 | arpeggio (pluck), zvonky v intru a v závěru |
-| 6–8 | bicí: BD s klesající výškou, SD (na 2 a 4 se HH jako tlesknutí), HH zavřený i otevřený, TOM, CYM |
+| 0 | hlas (melodie zpěvu) |
+| 1 | basa: osminy s důrazem mezi doby, v riffu držená, v tichých místech sub basa |
+| 2 | ozvěna hlasu (o tečkovanou osminu později) nebo druhý hlas pod melodií; v riffu pulzující akord |
+| 3, 4 | plocha (pad), ve sloce a v tichém refrénu s kanálem 5 třemi hlasy |
+| 5 | arpeggio (pluck) v refrénech, třetí hlas plochy, v riffu pulzující akord |
+| 6–8 | bicí: BD s klesající výškou (A#1), SD s nízkým TOM pod sebou, HH zavřený i otevřený, ride a crash (CYM), TOM |
 
 **Přehrávač not** (`tools/mkmusic.py`):
 - Krok je šestnáctina (138 BPM), takt 0 začíná 1,39 s po prvním VBI. Tik = zaokrouhlený čas × 59,94.
@@ -141,5 +141,6 @@ pro 6 melodických hlasů a rytmický režim OPL2. Melodie, akordy a stavba jsou
 - Legato bez nového náběhu (`legato`, `glide` = sklouznutí výšky po tikách).
 - Nota, po které hned následuje další, se vypne o tik dřív, aby v tiku náběhů nebyly i vypínací zápisy.
 - Změna nástroje se zapíše až 24 tiků předem, když kanál nehraje.
-- Kopák: kanál 6 začíná o 12, 6 a 2 půltóny výš a vrací se na B1 (`BD_SWEEP`).
+- Kopák: kanál 6 začíná o 12, 6 a 2 půltóny výš a vrací se na A#1 (`BD_SWEEP`).
+- HH a otevřený HH, crash a ride sdílejí operátor a liší se jen doznětím: přepnutí stojí jeden zápis.
 - Bicí se zapínají bitem v registru BDh; nový úder téhož nástroje bit nejdřív vynuluje.

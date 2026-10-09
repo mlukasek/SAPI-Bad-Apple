@@ -59,16 +59,26 @@ standardní knihovně):
   a dohledaná Viterbiho průchodem; sloka i refrén sedí na známou melodii.
 - Akordy z bělené chromy a basy po půltaktech: sloka D#m – D#m – Bmaj7 – C# Dm, refrén Bmaj7 – C#sus2 –
   D#m – D#m, v riffu D#m s G#7 a F#sus2, konce refrénu bas G# → G.
-- Kontrola výsledku (`work/compare.py`, nahrávka z SAPIemu proti originálu): podobnost chromy po taktech
-  většinou 0,6–0,98 a tónina sedí. Slabší jsou jen takty, kde melodie drží tón přes akord.
+- Kontrola výsledku (pracovní `work/compare.py`, nahrávka z SAPIemu proti originálu): podobnost chromy po
+  taktech většinou 0,6–0,96 a tónina sedí. Slabší jsou takty, kde melodie drží tón přes akord, a intro
+  (jen bicí, chroma tam nic neříká).
 
-**Aranžmá** ([format.md](format.md)):
-- 6 melodických kanálů a rytmický režim: hlas, basa, ozvěna nebo druhý hlas, dva hlasy akordů, arpeggio
-  nebo zvonky.
-- Vlastní intro (zvonky s ozvěnou nad sílící plochou, nástup kopáku a basy s otevíráním „filtru“ modulátorem,
-  vír virblu) a vlastní riff (rytmizovaný saw 3-3-2 a zvonkový motiv).
-- Tichý refrén zpívá zvonek, pak se vrátí hlas a vše graduje. Závěr v e moll vrací zvonky z intra.
-- Zvonek má poměr operátorů 3:1. Původní 3,5:1 dával do d moll cizí tóny C a D (ukázala to chroma).
+**Plán aranžmá podle originálu** (měřeno: rytmický otisk po pásmech a šestnáctinách, chroma po půltaktech,
+salience středu a stran sterea; autor první verzi s vlastním intrem zvonků odmítl, protože originál začíná
+bubny a činely):
+- **Intro 0–7: jen bicí.** Kopák na doby, virbl na 2 a 4 s vírem šestnáctin na konci sudých taktů, činely
+  na osminy, crash na začátku; kopák je laděný kolem A#1 (58 Hz). Takt 7 graduje do riffu.
+- **Riff 8–15, 64–71:** držená kvinta D#4 + A#4 bez tercie (power chord), pulzující syntezátor, držená basa.
+- **Sloka:** široká držená plocha (struny) D#m, basa osminy s důrazem mezi doby, hi-haty mezi dobami.
+- **Refrén:** široká plocha, basa osminy, plný rytmus.
+- **Tichý refrén 48–62:** bez kopáku, tlesknutí na 3. dobu, hlas zpívá dál. **Takt 63:** dva údery virblu a
+  společný úder na 3. dobu, pak ticho do riffu.
+- **Poslední refrén 104–119 v e moll: bez bicích.** Kopák mizí po taktu 103.
+- **Dohra 120–124:** jen doznívající Esus4, beze basy.
+
+**Aranžmá pro OPL2** ([format.md](format.md)): 6 melodických kanálů a rytmický režim. Hlas má ozvěnu nebo
+druhý hlas pod melodií, plochy ve sloce a v tichém refrénu mají 3 hlasy, virbl má pod sebou nízký TOM jako tělo,
+činely na osminy hraje „ride“ (CYM s kratším doznětím).
 
 **Synchronizace hudby s obrazem:**
 - Hudba se neřídí VBI, ale hodinami videa. Ty stojí, když je snímek pozdě, a hudba podle náskoku plynule

@@ -41,12 +41,15 @@ WAIT = 0xFF
 END = 0xFE
 
 MOD_SLOT = (0x00, 0x01, 0x02, 0x08, 0x09, 0x0A, 0x10, 0x11, 0x12)   # register offset of the modulator of a channel
-SLOT = {'BD': 0x13, 'SD': 0x14, 'HH': 0x11, 'OH': 0x11, 'TOM': 0x12, 'CYM': 0x15}    # BD: its carrier
-BIT = {'BD': 0x10, 'SD': 0x08, 'TOM': 0x04, 'CYM': 0x02, 'HH': 0x01, 'OH': 0x01}
-DRUM_OP = {'SD': P.SD, 'HH': P.HH, 'OH': P.OH, 'TOM': P.TOM, 'CYM': P.CYM}
+SLOT = {'BD': 0x13, 'SD': 0x14, 'HH': 0x11, 'OH': 0x11, 'TOM': 0x12, 'CYM': 0x15, 'RD': 0x15}    # BD: its carrier
+BIT = {'BD': 0x10, 'SD': 0x08, 'TOM': 0x04, 'CYM': 0x02, 'RD': 0x02, 'HH': 0x01, 'OH': 0x01}
+DRUM_OP = {'SD': P.SD, 'HH': P.HH, 'OH': P.OH, 'TOM': P.TOM, 'CYM': P.CYM, 'RD': P.RD}
+# instruments sharing an operator (only the envelope differs): the operator is switched before the hit
+SHARED = {'HH': 'hat', 'OH': 'hat', 'CYM': 'cym', 'RD': 'cym'}
 BD_BASE = 0x20 | 0x40               # rhythm mode, deep vibrato (14 cent)
-RHYTHM_KEYS = {6: 35, 7: 67, 8: 60}     # pitch of the rhythm channels (BD sweeps from above, TOM changes ch 8)
-BD_SWEEP = (47, 41, 37)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
+RHYTHM_KEYS = {6: 34, 7: 67, 8: 60}     # pitch of the rhythm channels (BD A#1 like the kick of the original,
+                                        # it sweeps from above; TOM changes ch 8)
+BD_SWEEP = (46, 40, 36)             # BD pitch in the first ticks of a hit, then RHYTHM_KEYS[6]
 PATCH_AHEAD = 24                    # ticks: an instrument change is written this early when the channel is free
 
 
@@ -93,7 +96,7 @@ class Song:
                                    patch=patch, legato=legato, glide=glide, vib=vib))
 
     def hit(self, step, inst, att=0.0, key=None):
-        """A drum: BD, SD, HH (closed), OH (open hat), CYM, TOM (key = its pitch)."""
+        """A drum: BD, SD, HH (closed), OH (open hat), CYM (crash), RD (ride), TOM (key = its pitch)."""
         self.hits.append((step, inst, att, key))
 
     def ramp(self, kind, ch, s0, s1, v0, v1):
@@ -213,7 +216,7 @@ def compile_song(song):
             last_off = n['k1']
     idx = {c: 0 for c in plan}      # channel -> index of its current note
     keyed = {}                      # channel -> True while key on
-    hh_var = 'HH'
+    var = {'hat': 'HH', 'cym': 'CYM'}
     bd_sweep = []
     last = max([n['k1'] for lst in plan.values() for n in lst] + list(hits)) + 60
     ticks = []
@@ -276,10 +279,10 @@ def compile_song(song):
                 continue
             o = DRUM_OP[ins]
             slot = SLOT[ins]
-            if ins in ('HH', 'OH') and ins != hh_var:
+            if ins in SHARED and var[SHARED[ins]] != ins:
                 for r, v in op_static(slot, o):
                     regs.set(dprep, r, v)
-                hh_var = ins
+                var[SHARED[ins]] = ins
             regs.set(dprep, 0x40 + slot, o['ksl'] << 6 | tl_of(o, a))
             if ins == 'TOM' and key is not None:
                 block, fn = ym_freq(key)
