@@ -20,6 +20,14 @@ Otázky, které jde ověřit jen na skutečném SAPI-1. Sbírat sem, autor je ov
   asi 2,4 T na zápis a 1,3 T na čtení (`SAPI-Prince-of-Persia/docs/hw-otazky.md`, měřicí program
   `ZRDBENCH`).
 
+## Z RAM disku emulovaného kartou DPI-1L (autor, 2026-10-15)
+
+- Demo běží celé, **plynule a hudba sedí**, i když fyzická ZRD-1V v rámu není a RAM disk na 60h emuluje karta
+  DPI-1L (Raspberry Pi Pico 2 W) z obrazu na microSD (`ramdisk.bin` z vydání 1.0.0) s cache a předčítáním.
+  Sestava: JPR-1V, AND-1V, RAM-1V, CGA-1V, MPH-1V, DPI-1L; ECMON volba 1.
+- Za celé demo Z80 čekal na RAM disk 5× (blok mimo cache), celkem 25 ms, nejdéle 7 ms, což kruhový buffer 32 KB
+  bez potíží pokryje. Měření: `SAPI_DPI-firmware/docs/mereni.md`.
+
 ## Otevřené (zatím nikdo nehlásil problém, ale cíleně neověřeno)
 
 - **Stíhají se snímky na HW přesně jako v modelu?** Program má čítač pozdních snímků `late_cnt` (symbol
